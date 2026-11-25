@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32">
+  <!-- The dashboard's logo (proxy/src/dashboard.html, .logo with #plane). -->
+  <rect width="32" height="32" rx="7" fill="#f26b1d"/>
+  <g transform="translate(7 7) scale(.75)">
+    <path d="M3 11.5 21 4l-5.5 16-3.8-6.2z" fill="#fff"/>
+    <path d="m11.7 13.8 9.3-9.8" stroke="#f26b1d" stroke-width="1.4"/>
+  </g>
+</svg>

@@ -1,0 +1,6 @@
+result*
+target/
+compat/
+.nixos-test-history
+__pycache__/
+*.pyc

@@ -1,0 +1,45 @@
+From: =?UTF-8?q?Andrzej=20Bro=C5=84ski?= <koxu1996@gmail.com>
+Subject: [PATCH] sync: shuffle the candidates before the stable sort, so ties
+ don't always go to the lowest actor ids
+
+Each sync round takes up to desired_count * 2 candidates with
+choose_multiple, sorts them by most missing, least recently synced, then
+proximity ring, and keeps the first desired_count (3 below 400 members).
+With 6 candidates or fewer, choose_multiple returns all of them in the
+members map's order, which is by actor id, and the sort is stable.
+
+A node that has just joined ties on every key: it knows of nothing it
+misses, has synced with nobody, and has no RTT ring yet (255 for all). So
+in small clusters its first rounds always went to its lowest-id peers,
+reachable or not, whether or not they had what it lacked. That is a
+catch-up delay of tens of seconds, not a stall: once sync timestamps and
+rings differ, the order changes. Measured on a new node of a small
+cluster: 25-36 s to catch up unpatched, 11-12 s with this patch.
+
+Shuffling before the sort leaves the ordering keys as they are and only
+breaks the ties at random.
+---
+--- a/crates/corro-agent/src/agent/handlers.rs
++++ b/crates/corro-agent/src/agent/handlers.rs
+@@ -38,7 +38,7 @@
+ use indexmap::map::Entry;
+ use indexmap::IndexMap;
+ use metrics::{counter, gauge, histogram};
+-use rand::{prelude::IteratorRandom, rngs::StdRng, SeedableRng};
++use rand::{prelude::IteratorRandom, rngs::StdRng, seq::SliceRandom, SeedableRng};
+ use rangemap::RangeInclusiveSet;
+ use serde_json::json;
+ use spawn::spawn_counted;
+@@ -1234,6 +1234,12 @@
+         let mut choices = candidates
+             .into_iter()
+             .choose_multiple(&mut rng, desired_count * 2);
++        // Break ties at random. With desired_count * 2 candidates or fewer, choose_multiple returns
++        // them all in actor-id order (members.states is a BTreeMap), and the sort below is stable. A
++        // node that has just joined ties on every key (nothing known missing, no sync yet, ring 255),
++        // so without this its first rounds always went to its lowest-id peers, reachable or not,
++        // delaying its catch-up by tens of seconds.
++        choices.shuffle(&mut rng);
+ 
+         choices.sort_by(|a, b| {
+             // most missing actors first

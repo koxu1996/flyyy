@@ -1,0 +1,183 @@
+From 183e88cfc2584bd30dbca96e7fb91b6c0784bf78 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Andrzej=20Bro=C5=84ski?= <koxu1996@gmail.com>
+Date: Wed, 28 Oct 2026 11:29:15 +0100
+Subject: [PATCH] ChunkedChanges: drain rows sharing the last seq instead of
+ dropping them
+
+On non-origin nodes, crsql_changes can legitimately hold two rows for the
+same (site_id, db_version, seq): cr-sqlite's resurrect path stamps the -1
+sentinel clock with the (db_version, seq) of the change that resurrected
+the row. ChunkedChanges stopped at the first row whose seq == last_seq,
+so only the sentinel was served and the actual column change was lost,
+leaving the recipient permanently diverged with no gaps.
+
+- keep consuming rows while the next row carries seq == last_seq
+- start the next chunk at the next row's actual seq when splitting on
+  size, since consecutive rows can share a seq
+- __corro_buffered_changes: add cid to the primary key (migration) so
+  partial versions containing such a pair are not deduplicated away
+---
+ crates/corro-agent/src/agent/util.rs |  2 +-
+ crates/corro-types/src/agent.rs      | 39 ++++++++++++++++-
+ crates/corro-types/src/change.rs     | 63 +++++++++++++++++++++++++++-
+ 3 files changed, 100 insertions(+), 4 deletions(-)
+
+diff --git a/crates/corro-agent/src/agent/util.rs b/crates/corro-agent/src/agent/util.rs
+index 6ab54234..5be2e082 100644
+--- a/crates/corro-agent/src/agent/util.rs
++++ b/crates/corro-agent/src/agent/util.rs
+@@ -1530,7 +1530,7 @@ pub fn process_incomplete_version<T: Deref<Target = rusqlite::Connection> + Comm
+                     unnest(:table_arr, :pk_arr, :cid_arr, :val_arr, :col_version_arr, :db_version_arr, :site_id_arr, :cl_arr, :seq_arr, :ts_arr)
+                 -- Otherwise sqlite will think ON CONFLICT is part of a JOIN
+                 WHERE TRUE
+-                ON CONFLICT (site_id, db_version, seq)
++                ON CONFLICT (site_id, db_version, seq, cid)
+                     DO NOTHING
+                 RETURNING
+                     "table"
+diff --git a/crates/corro-types/src/agent.rs b/crates/corro-types/src/agent.rs
+index 25913fd2..cdb48ee4 100644
+--- a/crates/corro-types/src/agent.rs
++++ b/crates/corro-types/src/agent.rs
+@@ -417,11 +417,46 @@ pub fn migrate(clock: Arc<uhlc::HLC>, conn: &mut Connection) -> rusqlite::Result
+     let migrations: Vec<Box<dyn Migration>> = vec![
+         Box::new(init_migration as fn(&Transaction) -> rusqlite::Result<()>),
+         Box::new(crsqlite_v0_17_migration(clock)),
++        Box::new(buffered_changes_cid_pk_migration as fn(&Transaction) -> rusqlite::Result<()>),
+     ];
+ 
+     crate::sqlite::migrate(conn, migrations)
+ }
+ 
++// `__corro_buffered_changes` used to be keyed on (site_id, db_version, seq),
++// which assumed that triple is unique. it is not on non-origin nodes: a
++// cr-sqlite resurrect sentinel is stamped with the (db_version, seq) of the
++// change that resurrected the row, so a version can legitimately hold two rows
++// with the same seq (the `-1` sentinel and the column change). adding `cid` to
++// the primary key keeps re-delivery deduplication while no longer dropping one
++// of the two rows.
++fn buffered_changes_cid_pk_migration(tx: &Transaction) -> rusqlite::Result<()> {
++    tx.execute_batch(
++        r#"
++            CREATE TABLE __corro_buffered_changes_new (
++                "table" TEXT NOT NULL,
++                pk BLOB NOT NULL,
++                cid TEXT NOT NULL,
++                val ANY, -- shouldn't matter I don't think
++                col_version INTEGER NOT NULL,
++                db_version INTEGER NOT NULL,
++                site_id BLOB NOT NULL, -- this differs from crsql_changes, we'll never buffer our own
++                seq INTEGER NOT NULL,
++                cl INTEGER NOT NULL, -- causal length
++                ts TEXT NOT NULL,
++
++                PRIMARY KEY (site_id, db_version, seq, cid)
++            ) WITHOUT ROWID;
++
++            INSERT OR IGNORE INTO __corro_buffered_changes_new
++                SELECT * FROM __corro_buffered_changes;
++
++            DROP TABLE __corro_buffered_changes;
++            ALTER TABLE __corro_buffered_changes_new RENAME TO __corro_buffered_changes;
++        "#,
++    )
++}
++
+ fn init_migration(tx: &Transaction) -> rusqlite::Result<()> {
+     tx.execute_batch(
+         r#"
+@@ -461,7 +496,9 @@ fn init_migration(tx: &Transaction) -> rusqlite::Result<()> {
+                 cl INTEGER NOT NULL, -- causal length
+                 ts TEXT NOT NULL,
+ 
+-                PRIMARY KEY (site_id, db_version, seq)
++                -- `cid` is part of the key: a resurrect sentinel and the change
++                -- that caused it can share (site_id, db_version, seq)
++                PRIMARY KEY (site_id, db_version, seq, cid)
+             ) WITHOUT ROWID;
+ 
+             -- SWIM memberships
+diff --git a/crates/corro-types/src/change.rs b/crates/corro-types/src/change.rs
+index e3164fc8..9f42eb64 100644
+--- a/crates/corro-types/src/change.rs
++++ b/crates/corro-types/src/change.rs
+@@ -137,8 +137,17 @@ where
+                     self.buffered_size += size;
+ 
+                     if self.last_pushed_seq == self.last_seq {
+-                        // this was the last seq! break early
+-                        break;
++                        // this was the last seq! but don't stop here: rows served by a
++                        // non-origin node can share the same seq (e.g. a cr-sqlite
++                        // resurrect sentinel stamped with the (db_version, seq) of the
++                        // change that resurrected the row). rows are served ordered by
++                        // seq ASC within a single db_version and last_seq is MAX(seq),
++                        // so any remaining rows must also carry seq == last_seq: drain
++                        // them into this chunk instead of dropping them.
++                        match self.iter.peek() {
++                            Some(Ok(next)) if next.seq == self.last_seq => continue,
++                            _ => break,
++                        }
+                     }
+ 
+                     if self.buffered_size >= self.max_buf_size {
+@@ -375,6 +384,56 @@ mod tests {
+         assert_eq!(chunker.next(), Some(Ok((changeset, dbsr!(5, 10)))));
+ 
+         assert_eq!(chunker.next(), None);
++
++        // rows sharing the last seq must all be sent: on non-origin nodes a
++        // cr-sqlite resurrect sentinel is stamped with the (db_version, seq) of
++        // the change that resurrected the row, so two rows can legitimately
++        // carry the same seq
++        let sentinel = Change {
++            cid: "-1".into(),
++            seq: CrsqlSeq(0),
++            ..changes[0].clone()
++        };
++        let col = Change {
++            cid: "addr".into(),
++            seq: CrsqlSeq(0),
++            ..changes[0].clone()
++        };
++
++        let (changeset, _) = mapped_changeset_from_changes(vec![sentinel.clone(), col.clone()]);
++        let mut chunker = ChunkedChanges::new(
++            vec![Ok(sentinel.clone()), Ok(col.clone())].into_iter(),
++            CrsqlSeq(0),
++            CrsqlSeq(0),
++            100000,
++        );
++
++        assert_eq!(chunker.next(), Some(Ok((changeset, dbsr!(0, 0)))));
++        assert_eq!(chunker.next(), None);
++
++        // a size-based split must not interrupt a run of rows sharing the last
++        // seq either: they are drained into the final chunk even if it exceeds
++        // max_buf_size
++        let first = Change {
++            cid: "worker".into(),
++            seq: CrsqlSeq(0),
++            ..changes[0].clone()
++        };
++        let (_, size1) = mapped_changeset_from_changes(vec![first.clone()]);
++        let (changeset, _) = mapped_changeset_from_changes(vec![
++            first.clone(),
++            sentinel.clone(),
++            col.clone(),
++        ]);
++        let mut chunker = ChunkedChanges::new(
++            vec![Ok(first), Ok(sentinel), Ok(col)].into_iter(),
++            CrsqlSeq(0),
++            CrsqlSeq(0),
++            size1, // fits only the first row: splits are skipped while draining
++        );
++
++        assert_eq!(chunker.next(), Some(Ok((changeset, dbsr!(0, 0)))));
++        assert_eq!(chunker.next(), None);
+     }
+ 
+     fn mapped_changeset_from_changes(changes: Vec<Change>) -> (ChangesetPerTable, usize) {
+-- 
+2.56.0
+

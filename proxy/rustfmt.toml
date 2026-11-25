@@ -1,0 +1,3 @@
+# Long lines, as the code was written: rustfmt keeps a line whole up to here.
+max_width = 160
+use_small_heuristics = "Max"

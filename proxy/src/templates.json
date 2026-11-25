@@ -1,0 +1,846 @@
+[
+  {
+    "id": "demos",
+    "name": "Demos",
+    "items": [
+      {
+        "name": "whoami",
+        "icon": "🙋",
+        "desc": "Shows which machine answered",
+        "image": "traefik/whoami@sha256:c4717a8d1f0134a7444e24f881160e033991f23027c6c5a9a3f8fd22e70d1d44",
+        "port": 80,
+        "cpus": 1,
+        "memory": 128,
+        "tested": true
+      },
+      {
+        "name": "echo",
+        "icon": "🔊",
+        "desc": "Replies with its machine id",
+        "image": "hashicorp/http-echo@sha256:fcb75f691c8b0414d670ae570240cbf95502cc18a9ba57e982ecac589760a186",
+        "port": 5678,
+        "cmd": [
+          "-text={id}"
+        ],
+        "cpus": 1,
+        "memory": 128,
+        "tested": true
+      },
+      {
+        "name": "echo-server",
+        "icon": "📡",
+        "desc": "Echoes your request back, WebSockets too",
+        "image": "jmalloc/echo-server@sha256:86f2c45aa7e7ebe1be30b21f8cfff25a7ed6e3b059751822d4b35bf244a688d5",
+        "port": 8080,
+        "cpus": 1,
+        "memory": 128,
+        "tested": true
+      },
+      {
+        "name": "podinfo",
+        "icon": "🐙",
+        "desc": "A small Go app with a UI and an API",
+        "image": "stefanprodan/podinfo@sha256:fa2f27c1a8561097e5144bfc0853eba6054d743b68b03de4cad4675616ddefb0",
+        "port": 9898,
+        "cpus": 1,
+        "memory": 128,
+        "tested": true
+      },
+      {
+        "name": "hello",
+        "icon": "👋",
+        "desc": "nginx page with the server's name and address",
+        "image": "nginxdemos/hello@sha256:b28d1e16c676896aaa98ed9c36d406cc4f4289558487f15e37e04354720f807a",
+        "port": 80,
+        "cpus": 1,
+        "memory": 128,
+        "tested": true
+      },
+      {
+        "name": "excalidraw",
+        "icon": "✏️",
+        "desc": "A hand-drawn whiteboard",
+        "image": "excalidraw/excalidraw@sha256:f7ee194addd607bf831d2af0f0a34463dd4225e426cf35199ef0b12a803398e9",
+        "port": 80,
+        "cpus": 1,
+        "memory": 128,
+        "tested": true
+      },
+      {
+        "name": "it-tools",
+        "icon": "🧰",
+        "desc": "Converters and generators for developers",
+        "image": "corentinth/it-tools@sha256:8b8128748339583ca951af03dfe02a9a4d7363f61a216226fc28030731a5a61f",
+        "port": 80,
+        "cpus": 1,
+        "memory": 128,
+        "tested": true
+      },
+      {
+        "name": "thelounge",
+        "icon": "💬",
+        "desc": "An IRC client that stays connected",
+        "image": "thelounge/thelounge@sha256:345af9c9d48d789f71a09d172fbc1bd3f250d47059c5a317497b67bd315989b7",
+        "port": 9000,
+        "cpus": 1,
+        "memory": 256,
+        "tested": true
+      }
+    ]
+  },
+  {
+    "id": "web",
+    "name": "Web",
+    "items": [
+      {
+        "name": "caddy",
+        "icon": "🔒",
+        "desc": "Web server with automatic HTTPS",
+        "image": "mirror.gcr.io/library/caddy@sha256:5e5286cb37d44086d651a5363f05f43a692ce4d649d88fb1bd844579f45fa9e8",
+        "port": 80,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "nginx",
+        "icon": "🟩",
+        "desc": "The default web server",
+        "image": "mirror.gcr.io/library/nginx@sha256:600f7cd45e27aa13e9304c834ab7c1b0ff39df85ee1dcc5087955455d77bc83b",
+        "port": 80,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "httpd",
+        "icon": "🪶",
+        "desc": "Apache HTTP server",
+        "image": "mirror.gcr.io/library/httpd@sha256:d3accb516506c05ae0068bb54ba6798a10b249b64db91268fca692326cb02b4b",
+        "port": 80,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "traefik",
+        "icon": "🚦",
+        "desc": "Cloud-native reverse proxy",
+        "image": "mirror.gcr.io/library/traefik@sha256:1336e85aaed293bd63d005086e0dd013b04078b26aaeb1c18b26a2f928af7e65",
+        "port": 8080,
+        "cmd": [
+          "--api.insecure=true"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "haproxy",
+        "icon": "⚖️",
+        "desc": "TCP/HTTP load balancer",
+        "image": "mirror.gcr.io/library/haproxy@sha256:b26dc654dcd188970e4ba3d478fd92b5b00688f85a81f0a50b1adc63bd3e0793",
+        "port": 8404,
+        "broken": "the image ships no haproxy.cfg; it needs a config file, which a deploy can't provide yet",
+        "tcp": true
+      },
+      {
+        "name": "envoy",
+        "icon": "🛰️",
+        "desc": "Service proxy, admin on 9901",
+        "image": "mirror.gcr.io/envoyproxy/envoy@sha256:a707c3821b4cecb5db43d8e86e983e0f57b81010fefbabc01feeb071fb8cc08e",
+        "port": 9901,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "static-web-server",
+        "icon": "📄",
+        "desc": "Tiny static file server",
+        "image": "mirror.gcr.io/joseluisq/static-web-server@sha256:94618e3d17802265a21926217e6f9e7832b311b6fbf5933684001739fafed06a",
+        "port": 80,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      }
+    ]
+  },
+  {
+    "id": "db",
+    "name": "Databases",
+    "items": [
+      {
+        "name": "postgres",
+        "icon": "🐘",
+        "desc": "The relational default",
+        "image": "mirror.gcr.io/library/postgres@sha256:31ba9c94a03ada9988f2bb493a22a75eef3a185884533e5cdbcd498ea835b08f",
+        "port": 5432,
+        "env": {
+          "POSTGRES_PASSWORD": "change-me"
+        },
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "mysql",
+        "icon": "🐬",
+        "desc": "Classic relational database",
+        "image": "mirror.gcr.io/library/mysql@sha256:a0225d1ea6631c8bc2385dc4c2faba17bbf1834ecf369e1659a9a382bd8d5dd7",
+        "port": 3306,
+        "env": {
+          "MYSQL_ROOT_PASSWORD": "change-me"
+        },
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "mariadb",
+        "icon": "🦭",
+        "desc": "Community MySQL fork",
+        "image": "mirror.gcr.io/library/mariadb@sha256:c4124d1afa875e47f2892edf26b482fa54f796e2f342d3717a04ca091a22a9bd",
+        "port": 3306,
+        "env": {
+          "MARIADB_ROOT_PASSWORD": "change-me"
+        },
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "mongo",
+        "icon": "🍃",
+        "desc": "Document database",
+        "image": "mirror.gcr.io/library/mongo@sha256:e16e606f792ea89d2b4907b54e5e31eb86a7a23e27231dce3a982cc8f2d73cd2",
+        "port": 27017,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "cockroach",
+        "icon": "🪳",
+        "desc": "Distributed SQL, web UI",
+        "image": "mirror.gcr.io/cockroachdb/cockroach@sha256:ffd6f68e85216912d74581188209159a54a91d0e85b7f32ea260930aa1c06b99",
+        "port": 8080,
+        "cmd": [
+          "start-single-node",
+          "--insecure"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "clickhouse",
+        "icon": "🟨",
+        "desc": "Columnar analytics, HTTP API",
+        "image": "mirror.gcr.io/clickhouse/clickhouse-server@sha256:0152dd511befe6a2c2ef53e930726179669b08116da78500b37c51c96ff5ee77",
+        "port": 8123,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "couchdb",
+        "icon": "🛋️",
+        "desc": "Document store over HTTP",
+        "image": "mirror.gcr.io/library/couchdb@sha256:bed314d10cdf58c0fff63352db4c3f168df58a185a773c0e2295105375c5ef10",
+        "port": 5984,
+        "env": {
+          "COUCHDB_USER": "admin",
+          "COUCHDB_PASSWORD": "change-me"
+        },
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "cassandra",
+        "icon": "👁️",
+        "desc": "Wide-column store",
+        "image": "mirror.gcr.io/library/cassandra@sha256:ae4cc2e4b62a5b2a2dd1645ba827cb50c589cc7531bcffe8b8b60ac3b1adc79d",
+        "port": 9042,
+        "broken": "a single node takes longer than the agent's fixed 30 s readiness window to open 9042",
+        "tcp": true
+      }
+    ]
+  },
+  {
+    "id": "kv",
+    "name": "Caches",
+    "items": [
+      {
+        "name": "redis",
+        "icon": "🟥",
+        "desc": "In-memory data store",
+        "image": "mirror.gcr.io/library/redis@sha256:4764ce37931aac77c0d033680b339b19b4a4a81772204d268947cb851212d0ac",
+        "port": 6379,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "valkey",
+        "icon": "🔑",
+        "desc": "Open-source Redis fork",
+        "image": "mirror.gcr.io/valkey/valkey@sha256:8f836008e0986c36adf50da714c7060cf689dbb335f61fe077939d90fa650809",
+        "port": 6379,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "keydb",
+        "icon": "🗝️",
+        "desc": "Multithreaded Redis fork",
+        "image": "mirror.gcr.io/eqalpha/keydb@sha256:6537505c42355ca1f571276bddf83f5b750f760f07b2a185a676481791e388ac",
+        "port": 6379,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "memcached",
+        "icon": "🧊",
+        "desc": "Plain memory cache",
+        "image": "mirror.gcr.io/library/memcached@sha256:9c50e44b81bda45b1214ed4f3e11a4b96721a05728279775c7f76f7b06a804d6",
+        "port": 11211,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "etcd",
+        "icon": "📒",
+        "desc": "Consistent key-value store",
+        "image": "quay.io/coreos/etcd@sha256:a3ccd299377af4b9968d8cbaaf9722fe354297f11908f74a846075e1e5f4ee89",
+        "port": 2379,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      }
+    ]
+  },
+  {
+    "id": "queue",
+    "name": "Messaging",
+    "items": [
+      {
+        "name": "rabbitmq",
+        "icon": "🐇",
+        "desc": "AMQP message broker",
+        "image": "mirror.gcr.io/library/rabbitmq@sha256:485319d42170eab53d8a030e1cc49d95e41f5d325479fa504736db8091981eb7",
+        "port": 5672,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "nats",
+        "icon": "📨",
+        "desc": "Lightweight pub/sub",
+        "image": "mirror.gcr.io/library/nats@sha256:991242c32d2738ffd358fd6614dd96c735017b4b3b34bfdb2c52a072d66db211",
+        "port": 4222,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "kafka",
+        "icon": "🪵",
+        "desc": "Event streaming log",
+        "image": "mirror.gcr.io/apache/kafka@sha256:3f7b939115cd4872e9cee9369d80bd69712fde55f9902f46d793f64848dedc75",
+        "port": 9092,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "redpanda",
+        "icon": "🐼",
+        "desc": "Kafka-compatible streaming",
+        "image": "mirror.gcr.io/redpandadata/redpanda@sha256:8b1076e0d61bfceb66594dc01536427ce0b529f8ead35fdab9763ab6085891ce",
+        "port": 9092,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      },
+      {
+        "name": "mosquitto",
+        "icon": "🦟",
+        "desc": "MQTT broker",
+        "image": "mirror.gcr.io/library/eclipse-mosquitto@sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f",
+        "port": 1883,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true,
+        "tcp": true
+      }
+    ]
+  },
+  {
+    "id": "search",
+    "name": "Search & storage",
+    "items": [
+      {
+        "name": "meilisearch",
+        "icon": "🔎",
+        "desc": "Instant search engine",
+        "image": "mirror.gcr.io/getmeili/meilisearch@sha256:fe500cf9cca05cb9f027981583f28eccf17d35d94499c1f8b7b844e7418152fc",
+        "port": 7700,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "typesense",
+        "icon": "⚡",
+        "desc": "Typo-tolerant search",
+        "image": "mirror.gcr.io/typesense/typesense@sha256:316b7e71c21f7e5e5caa8daa150e1b3f2be8c876081ee1f77bc2d92cd7f137d0",
+        "port": 8108,
+        "cmd": [
+          "--data-dir=/tmp",
+          "--api-key=x"
+        ],
+        "broken": "segfaults at start (exit 139) with no output; not investigated yet"
+      },
+      {
+        "name": "opensearch",
+        "icon": "🔭",
+        "desc": "Elasticsearch-compatible search",
+        "image": "mirror.gcr.io/opensearchproject/opensearch@sha256:3bfa1ec74d56928c2e018033d45c460ce2c0ea65a5cedd577de3102326c31b89",
+        "port": 9200,
+        "cmd": [
+          "opensearch",
+          "-Ediscovery.type=single-node"
+        ],
+        "env": {
+          "DISABLE_SECURITY_PLUGIN": "true",
+          "DISABLE_INSTALL_DEMO_CONFIG": "true",
+          "OPENSEARCH_JAVA_OPTS": "-Xms512m -Xmx512m"
+        },
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "seaweedfs",
+        "icon": "🌊",
+        "desc": "S3-compatible blob store",
+        "image": "mirror.gcr.io/chrislusf/seaweedfs@sha256:bb05d66d2963b1cc48073190781c3dd29e2c4c88a2ae2986bf58e38c86d89c6e",
+        "port": 9333,
+        "cmd": [
+          "server"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "registry",
+        "icon": "📦",
+        "desc": "Container image registry",
+        "image": "mirror.gcr.io/library/registry@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3",
+        "port": 5000,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      }
+    ]
+  },
+  {
+    "id": "obs",
+    "name": "Observability",
+    "items": [
+      {
+        "name": "prometheus",
+        "icon": "🔥",
+        "desc": "Metrics and alert rules",
+        "image": "quay.io/prometheus/prometheus@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2",
+        "port": 9090,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "alertmanager",
+        "icon": "🚨",
+        "desc": "Routes Prometheus alerts",
+        "image": "quay.io/prometheus/alertmanager@sha256:e9733bafb1bdef9b00e25a21f8f99dc26a22224bf16641ad754d1649f4c3357a",
+        "port": 9093,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "node-exporter",
+        "icon": "🖥️",
+        "desc": "Host metrics for Prometheus",
+        "image": "quay.io/prometheus/node-exporter@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0",
+        "port": 9100,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "victoria-metrics",
+        "icon": "📈",
+        "desc": "Fast Prometheus-compatible TSDB",
+        "image": "mirror.gcr.io/victoriametrics/victoria-metrics@sha256:f60dc268b54ecf87f6e09d740c2b732838aa9193090cc741417c9f6386a130df",
+        "port": 8428,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "influxdb",
+        "icon": "⏱️",
+        "desc": "Time-series database",
+        "image": "mirror.gcr.io/library/influxdb@sha256:a450f6faf9573e6c2e96a0f575885ae8b7387cc87e4de94599e247ebfa3ac417",
+        "port": 8086,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "grafana",
+        "icon": "📊",
+        "desc": "Dashboards for everything",
+        "image": "mirror.gcr.io/grafana/grafana@sha256:74144189b38447facf737dfd0f3906e42e0776212bf575dc3334c3609183adf7",
+        "port": 3000,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "loki",
+        "icon": "🪵",
+        "desc": "Log aggregation",
+        "image": "mirror.gcr.io/grafana/loki@sha256:00981fd9455db8589c3aa6d06744af3138c4b2c32fdec62101e92c7a704b2642",
+        "port": 3100,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "jaeger",
+        "icon": "🕵️",
+        "desc": "Distributed tracing UI",
+        "image": "mirror.gcr.io/jaegertracing/jaeger@sha256:8c593d8048d86334eb52dba26633b6c846b8ecbe5c22905702c932ae97baeb42",
+        "port": 16686,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "otel-collector",
+        "icon": "🧲",
+        "desc": "OpenTelemetry collector",
+        "image": "mirror.gcr.io/otel/opentelemetry-collector@sha256:6d260efde7406a1f7d731a5d9663cb6ce25fa634f3ef3ef4a69266aaae1680fd",
+        "port": 4318,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      }
+    ]
+  },
+  {
+    "id": "runtime",
+    "name": "Runtimes",
+    "items": [
+      {
+        "name": "python",
+        "icon": "🐍",
+        "desc": "http.server on 8000",
+        "image": "mirror.gcr.io/library/python@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb",
+        "port": 8000,
+        "cmd": [
+          "python3",
+          "-m",
+          "http.server",
+          "8000"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "node",
+        "icon": "🟢",
+        "desc": "One-line HTTP server",
+        "image": "mirror.gcr.io/library/node@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da",
+        "port": 3000,
+        "cmd": [
+          "node",
+          "-e",
+          "require('http').createServer((q,s)=>s.end('ok')).listen(3000)"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "bun",
+        "icon": "🥟",
+        "desc": "Bun.serve one-liner",
+        "image": "mirror.gcr.io/oven/bun@sha256:1d22548f177f4ff38e0c15baa3c2c46c6c2060ba2d1bc573bb4720b407548f1d",
+        "port": 3000,
+        "cmd": [
+          "bun",
+          "-e",
+          "Bun.serve({port:3000,fetch:()=>new Response('ok')})"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "deno",
+        "icon": "🦕",
+        "desc": "Deno.serve one-liner",
+        "image": "mirror.gcr.io/denoland/deno@sha256:3373fa94f2a9295041f35ec617d13ef5a84eec944235729ec10b5c167a891688",
+        "port": 8000,
+        "cmd": [
+          "eval",
+          "Deno.serve({port:8000},()=>new Response('ok'))"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "php",
+        "icon": "🐘",
+        "desc": "Built-in web server",
+        "image": "mirror.gcr.io/library/php@sha256:9cf851bc2c1b37c3e59dfd677a3c3e56d485af5a47c93f629424bb039eafcb69",
+        "port": 8000,
+        "cmd": [
+          "php",
+          "-S",
+          "0.0.0.0:8000",
+          "-t",
+          "/"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "ruby",
+        "icon": "💎",
+        "desc": "TCPServer one-liner",
+        "image": "mirror.gcr.io/library/ruby@sha256:3a8122c4267d89a95b1ce0f3029b44e325180314661856300d29d3e8a80ec46f",
+        "port": 8000,
+        "cmd": [
+          "ruby",
+          "-rsocket",
+          "-e",
+          "s=TCPServer.new(8000);loop{c=s.accept;c.gets;c.print(\"HTTP/1.0 200 OK\\r\\n\\r\\nok\");c.close}"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "java",
+        "icon": "☕",
+        "desc": "Temurin jwebserver",
+        "image": "mirror.gcr.io/library/eclipse-temurin@sha256:5d90b26c0784ccf55af55f97cbcf7f3969c66a06299c93bdc72649219942a48f",
+        "port": 8000,
+        "cmd": [
+          "jwebserver",
+          "-p",
+          "8000",
+          "-b",
+          "0.0.0.0"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "dotnet",
+        "icon": "🟣",
+        "desc": "ASP.NET sample app",
+        "image": "mcr.microsoft.com/dotnet/samples@sha256:ef878229733b4c99b2e54a58002df96cfe00ae47288a817a8d8867cbf43a96a0",
+        "port": 8080,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "busybox",
+        "icon": "🧱",
+        "desc": "busybox httpd",
+        "image": "mirror.gcr.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+        "port": 8080,
+        "cmd": [
+          "httpd",
+          "-f",
+          "-p",
+          "8080",
+          "-h",
+          "/etc"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      }
+    ]
+  },
+  {
+    "id": "apps",
+    "name": "Apps",
+    "items": [
+      {
+        "name": "gitea",
+        "icon": "🍵",
+        "desc": "Self-hosted Git",
+        "image": "mirror.gcr.io/gitea/gitea@sha256:918955f16b1e91732af6c449bb2db3a34271748dbed1ccfbae48f8a2fb5480b8",
+        "port": 3000,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "vaultwarden",
+        "icon": "🛡️",
+        "desc": "Bitwarden-compatible vault",
+        "image": "mirror.gcr.io/vaultwarden/server@sha256:efb3cde962015fcc036b2ea625242248611943b27212ebf4392841fb30fad055",
+        "port": 80,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "uptime-kuma",
+        "icon": "🐻",
+        "desc": "Uptime monitoring",
+        "image": "mirror.gcr.io/louislam/uptime-kuma@sha256:70233f4acb5163fd2a59a49909cf01e44415cecff13dba69e3a86647a2919f83",
+        "port": 3001,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "n8n",
+        "icon": "🔗",
+        "desc": "Workflow automation",
+        "image": "mirror.gcr.io/n8nio/n8n@sha256:9f6d0a5987ab5a297c4b0b38fbf1a22285dd1364551478e93f03d506908fa74c",
+        "port": 5678,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "ghost",
+        "icon": "👻",
+        "desc": "Publishing platform",
+        "image": "mirror.gcr.io/library/ghost@sha256:3e62a20e7f172af9c313bcd74c67098359c4fa7f7121a20ebd740c9f6cd0c0b9",
+        "port": 2368,
+        "env": {
+          "NODE_ENV": "development"
+        },
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "wordpress",
+        "icon": "📝",
+        "desc": "Blogs and sites",
+        "image": "mirror.gcr.io/library/wordpress@sha256:5d2c212561c4b5442ebc4d98933a9cbadcf3dee8888ed3fd9ed44667c27cc905",
+        "port": 80,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "nextcloud",
+        "icon": "☁️",
+        "desc": "Files and collaboration",
+        "image": "mirror.gcr.io/library/nextcloud@sha256:07ec73cc816e58d6f45a162cd53ef886462c29271a23fc68d0124cec276e3767",
+        "port": 80,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "keycloak",
+        "icon": "🔐",
+        "desc": "Identity and SSO",
+        "image": "quay.io/keycloak/keycloak@sha256:9409c59bdfb65dbffa20b11e6f18b8abb9281d480c7ca402f51ed3d5977e6007",
+        "port": 8080,
+        "cmd": [
+          "start-dev"
+        ],
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "adminer",
+        "icon": "🗄️",
+        "desc": "Database admin in one page",
+        "image": "mirror.gcr.io/library/adminer@sha256:fb9882a47a5c4250e74d18f3e16ca4e09265ff1803d06eb6dde97e3491de7a9b",
+        "port": 8080,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "pocketbase",
+        "icon": "🎒",
+        "desc": "Backend in one file",
+        "image": "ghcr.io/muchobien/pocketbase@sha256:9a0be68a80ca1348ba8d15f217b3f983be4c094b3c571a09b3ebdeb357259338",
+        "port": 8090,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "umami",
+        "icon": "📉",
+        "desc": "Privacy-friendly analytics",
+        "image": "ghcr.io/umami-software/umami@sha256:e69d1a7932e9dab0fc523edc7be1f3a53f3c261f57856fc2167ae74a8fc022e8",
+        "port": 3000,
+        "broken": "needs an external database (DATABASE_URL); apps can't reach each other yet"
+      },
+      {
+        "name": "vault",
+        "icon": "🏦",
+        "desc": "Secrets management",
+        "image": "mirror.gcr.io/hashicorp/vault@sha256:268bb80aa9c6d13d65fcfa05c0c268caca068952240a8087291a6ce0b66e3a10",
+        "port": 8200,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      },
+      {
+        "name": "consul",
+        "icon": "🧭",
+        "desc": "Service discovery and KV",
+        "image": "mirror.gcr.io/hashicorp/consul@sha256:6126c30072690cb3173a450ff5bde120c3a01e11c9dccab83b1b2314d4c828bd",
+        "port": 8500,
+        "cpus": 2,
+        "memory": 1024,
+        "tested": true
+      }
+    ]
+  }
+]

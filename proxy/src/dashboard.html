@@ -1,0 +1,2450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flyyy</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23ff8a3d'/%3E%3Cpath d='M7 16.5 25 8l-5 17-4.5-6.5z' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #f6f3ee; --card: #fffdf9; --ink: #221f1b; --ink-2: #67615a; --ink-3: #9d968c;
+    --line: rgba(60,40,20,.13); --fill: rgba(60,40,20,.045); --fill-2: rgba(60,40,20,.08);
+    --accent: #f26b1d; --accent-ink: #fff; --accent-soft: #fdebdc;
+    --green: #2f9e57; --amber: #d99212; --red: #d9412f; --grey: #c9c2b8;
+    --shadow: none;
+    --radius: 6px;
+    --bar: rgba(246,243,238,.92);
+    --sans: "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    /* Shell commands (shHighlight), at least 4.5:1 on var(--fill) except the muted \ and $ prompt. */
+    --sh-cmd: #b93f0a; --sh-flag: #0062c4; --sh-str: #15702d; --sh-ph: var(--ink-2); --sh-op: var(--ink-3);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161412; --card: #1e1b18; --ink: #efe9e1; --ink-2: #a9a197; --ink-3: #736c63;
+      --line: rgba(255,240,220,.11); --fill: rgba(255,240,220,.05); --fill-2: rgba(255,240,220,.09);
+      --accent-soft: #3a2414; --grey: #4a443d; --shadow: none;
+      --bar: rgba(22,20,18,.9);
+      --sh-cmd: var(--accent); --sh-flag: #64a8ff; --sh-str: #5fd07c;
+    }
+  }
+  * { box-sizing: border-box; }
+  /* Always a scrollbar, so the layout doesn't shift between short and long pages. */
+  html { overflow-y: scroll; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14.5px/1.45 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input { font: inherit; color: inherit; }
+  code { font-family: var(--mono); }
+  button { cursor: pointer; border: 0; background: none; }
+  .wrap { padding: 24px 32px 80px; min-width: 0; }
+  .mono { font-family: var(--mono); font-size: 13px; }
+  .muted { color: var(--ink-2); }
+  [hidden] { display: none !important; }
+
+  /* sidebar: brand, pages, collapse; a slim header on phones */
+  .shell { display: flex; align-items: flex-start; }
+  .shell > main { flex: 1; }
+  .side { position: sticky; top: 0; height: 100vh; width: 220px; flex: none; padding: 14px 10px; border-right: 1px solid var(--line);
+          display: flex; flex-direction: column; gap: 2px; transition: width .2s; overflow: hidden; background: var(--card); }
+  .brand { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 6px; margin-bottom: 14px; text-decoration: none; color: inherit; }
+  .logo { width: 32px; height: 32px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; flex: none; }
+  .logo svg { width: 18px; height: 18px; }
+  h1 { font-size: 21px; font-weight: 700; letter-spacing: -.02em; margin: 0; white-space: nowrap; }
+  h1 .yyy { color: var(--accent); }
+  .sub { font-size: 13px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .side a.page, .side .collapse, .side .foot { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 12px; border-radius: var(--radius); font-size: 14px;
+            font-weight: 550; color: var(--ink-2); text-decoration: none; white-space: nowrap; }
+  .side .i { width: 18px; height: 18px; color: inherit; flex: none; }
+  .side a.page:hover, .side .collapse:hover, .side .foot:hover { background: var(--fill); color: var(--ink); }
+  .side a.page.on { background: var(--fill-2); color: var(--ink); font-weight: 650; }
+  .side a.page .n { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .side .collapse { width: 40px; justify-content: center; padding: 0; }
+  /* The profile button: a full-width row at the bottom, above the collapse toggle, which goes to the
+     bottom itself when nobody is signed in. Its menu (Sign out) opens above it. */
+  .side .foot { width: 100%; }
+  .side .prof { margin-top: auto; height: 50px; padding: 0 8px; gap: 10px; text-align: left; }
+  .side .prof .label { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+  .side .prof .label b, .side .prof .label small { overflow: hidden; text-overflow: ellipsis; }
+  .side .prof .label b { color: var(--ink); font-weight: 600; }
+  .side .prof .label small { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+  .side .prof[hidden] + .collapse { margin-top: auto; }
+  /* The repo's link (when the flake is on GitHub) starts the bottom group, above the profile button. */
+  .side .src { margin-top: auto; }
+  .side .src:not([hidden]) ~ .prof, .side .src:not([hidden]) ~ .collapse { margin-top: 0; }
+  .av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent);
+        font-size: 14px; font-weight: 650; text-transform: uppercase; }
+  /* Placed by placeWhoMenu() (fixed, so the sidebar's overflow doesn't clip it). */
+  .who-menu { position: fixed; z-index: 20; min-width: 220px; max-width: calc(100vw - 32px); padding: 6px; border: 1px solid var(--line); border-radius: var(--radius);
+              background: var(--card); box-shadow: 0 8px 28px rgba(0,0,0,.16); font-size: 13px; }
+  .who-menu .who-id { padding: 8px 10px; color: var(--ink-2); }
+  .who-menu .who-id b { color: var(--ink); font-weight: 600; }
+  .who-menu #sign-out { display: block; width: 100%; margin-top: 6px; padding: 8px 10px; border-top: 1px solid var(--line); border-radius: 0 0 4px 4px;
+                        text-align: left; color: var(--red); font-size: 13px; font-weight: 600; }
+  .who-menu #sign-out:hover { background: var(--fill); }
+  body.nav-collapsed .side { width: 60px; }
+  body.nav-collapsed .side a.page, body.nav-collapsed .side .foot { padding: 0 11px; }
+  body.nav-collapsed .side .label, body.nav-collapsed .side .n, body.nav-collapsed .side h1 { display: none; }
+  body.nav-collapsed .side .prof { padding: 0 5px; }
+  body.nav-collapsed .brand { padding: 0 4px; }
+  body.nav-collapsed .side .collapse .i { transform: scaleX(-1); }
+  /* Only when the control plane can't be reached. */
+  .problem { margin-bottom: 16px; padding: 10px 14px; border-radius: var(--radius); background: rgba(255,69,58,.1); color: var(--red); font-size: 13px; }
+  /* Apps, for the operator: apps but no live worker. */
+  .nowork { margin-bottom: 14px; padding: 9px 14px; border-radius: var(--radius); border-left: 3px solid var(--amber);
+            background: color-mix(in srgb, var(--amber) 13%, transparent); font-size: 13px; }
+  .nowork a, .nowork .linkbtn { color: var(--accent); font-weight: 600; text-decoration: none; margin-left: 4px; white-space: nowrap; }
+  .toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
+  .plain-link { color: inherit; text-decoration: none; }
+  .plain-link:hover { color: var(--accent); }
+  /* A real target, not just the text: padded, with a hover background. */
+  .back { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px 0 10px; margin: -8px 0 8px -10px; border-radius: 5px;
+          font-size: 14px; color: var(--ink-2); text-decoration: none; }
+  .back:hover { background: var(--fill-2); color: var(--ink); }
+  /* the Apps list: a header row and one row per app, opening its page */
+  /* Flat and full width: hairlines between rows, no frame around the table. */
+  .list { border-bottom: 1px solid var(--line); }
+  .lrow { display: grid; grid-template-columns: minmax(0, 1.5fr) 118px minmax(0, 1.3fr) minmax(0, 1fr) 64px 14px; gap: 16px; align-items: center;
+          padding: 14px 12px; border-top: 1px solid var(--line); color: inherit; text-decoration: none; }
+  .lrow.head { padding-top: 4px; padding-bottom: 10px; border-top: 0; border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 650;
+               letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+  .lrow.head + .lrow { border-top: 0; }
+  .lrow.head > span { font-size: inherit; color: inherit; }
+  a.lrow:hover { background: var(--fill); }
+  .lrow.gone { opacity: .55; }
+  .lrow .nm, .cpcard .nm { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 15px; font-weight: 650; }
+  .lrow .nm .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .lrow .nm span, .cpcard .nm span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow .hs { margin: 2px 0 0 18px; font-size: 12px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow .im { min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow .im small { display: block; font-size: 12px; color: var(--ink-2); }
+  .lrow .ds { display: flex; flex-wrap: wrap; gap: 3px; }
+  .lrow .ds .dot { width: 9px; height: 9px; border-radius: 3px; }
+  .lrow .ct { text-align: right; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .lrow .ct b { font-size: 15px; color: var(--ink); }
+  .lrow .ch { font-size: 18px; color: var(--ink-3); }
+  .app.detail { padding: 0; }
+  .scale-btn { gap: 8px; }
+  .scale-btn b { font-variant-numeric: tabular-nums; }
+  .pop { position: absolute; right: 0; top: 44px; width: 320px; padding: 18px; z-index: 6; text-align: left;
+         background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 16px 40px rgba(0,0,0,.16); }
+  .pop .t { font-size: 12px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+  .pop .big { display: flex; align-items: center; justify-content: space-between; margin: 10px 0 6px; }
+  .pop .big output { font-size: 34px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .pop .big .stepper button { width: 34px; height: 34px; font-size: 19px; }
+  .pop input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pop .presets { display: flex; gap: 6px; margin: 10px 0 12px; }
+  .pop .presets button { height: 28px; min-width: 34px; padding: 0 10px; border-radius: 5px; background: var(--fill); font-size: 13px; font-weight: 550; color: var(--ink-2); }
+  .pop .presets button.on { background: var(--ink); color: var(--bg); }
+  .pop .imp { font-size: 13px; color: var(--ink-2); padding: 10px 0; border-top: 1px solid var(--line); }
+  .pop .imp b { color: var(--ink); }
+  .pop .warn { color: var(--red); font-size: 12.5px; margin-top: 4px; }
+  .pop .actions { margin-top: 10px; }
+  .detail-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+  .detail-head .name { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+  .detail-head .name .sw { width: 12px; height: 12px; }
+  .detail-head .host { font-size: 14px; }
+  .detail-head .tools { display: flex; align-items: center; gap: 8px; margin-left: auto; padding-top: 4px; }
+  /* The app page's status strip: five cells (three below 1100 px, two on phones), hairlines between them
+     from the grid's gaps. */
+  .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); margin-bottom: 8px;
+           border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .stat { padding: 14px 18px; background: var(--bg); min-width: 0; }
+  .stat .s { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stat.bad .v, .stat.bad .s { color: var(--red); }
+  .stat .k .i, .panel h3 .i, .kv dt .i, .detail-head .host .i { width: 14px; height: 14px; flex: none; }
+  .stat .k, .panel h3 { display: flex; align-items: center; gap: 6px; }
+  .kv dt { display: flex; align-items: center; gap: 8px; }
+  .kv dt .i { color: var(--ink-3); }
+  .detail-head .host { display: inline-flex; align-items: center; gap: 6px; }
+  .detail-head .host .i { color: var(--ink-3); }
+  .stat .k { font-size: 11px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+  .stat .v { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .stat .v small { font-size: 13px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; }
+  .stat .s { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  .panel { margin-top: 28px; }
+  .panel h3 { font-size: 11px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin: 0; padding-bottom: 8px;
+              border-bottom: 1px solid var(--line); }
+  .kv { display: grid; grid-template-columns: 136px minmax(0, 1fr); font-size: 14px; }
+  .kv > * { padding: 9px 0; border-top: 1px solid var(--line); min-width: 0; }
+  .kv > :nth-child(-n+2) { border-top: 0; }
+  .app.detail .errline { margin: 16px 0 0; }
+  .kv dt { color: var(--ink-2); padding-right: 16px; }
+  .kv dd { margin: 0; overflow-wrap: anywhere; }
+  .kv code { font: 12.5px var(--mono); }
+  /* The app's events (its Events tab): time, machine, text; the newest 200. */
+  .evrow { display: grid; grid-template-columns: 76px minmax(0, 150px) minmax(0, 1fr); gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .evrow:first-child { border-top: 0; padding-top: 0; }
+  .evrow .em { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .evrow .bad { color: var(--red); }
+  pre.logs { margin: 0; max-height: 60vh; overflow: auto; padding: 12px; border-radius: var(--radius); background: var(--fill); font: 12px/1.45 var(--mono);
+             white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  .btn { white-space: nowrap; height: 34px; padding: 0 16px; border-radius: 5px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; transition: transform .1s, opacity .15s; }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); box-shadow: inset 0 -2px 0 rgba(0,0,0,.18); }
+  .btn.plain { background: var(--fill-2); }
+  .btn.red { background: var(--red); color: #fff; }
+  .icon-btn { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-2); }
+  .icon-btn:hover { background: var(--fill); }
+
+  /* cards */
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--line); }
+  .apps { display: grid; gap: 14px; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .name { font-size: 17px; font-weight: 650; letter-spacing: -.01em; white-space: nowrap; }
+  .host { display: inline-flex; margin-top: 3px; font-size: 13px; color: var(--ink-2); text-decoration: none; }
+  a.host:hover { color: var(--accent); }
+  span.host { color: var(--ink-3); }
+  .pill { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill.ok { color: #1f9d48; background: rgba(48,193,90,.12); }
+  .pill.busy { color: #c47f00; background: rgba(255,176,32,.15); }
+  .pill.busy::before { animation: pulse 1s ease-in-out infinite; }
+  .pill.bad { color: var(--red); background: rgba(255,69,58,.12); }
+  .pill.off { color: var(--ink-2); background: var(--fill-2); }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .digest { font-family: var(--mono); font-size: 11px; color: var(--ink-3); background: var(--fill); padding: 1px 5px; border-radius: 5px; }
+  .more { position: relative; flex: none; }
+  .more > .icon-btn { font-size: 18px; letter-spacing: 1px; }
+  .menu { position: absolute; right: 0; top: 36px; min-width: 180px; padding: 5px; z-index: 5; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 32px rgba(0,0,0,.14); }
+  .menu button { display: flex; width: 100%; padding: 8px 10px; border-radius: 4px; font-size: 14px; text-align: left; }
+  .menu button:hover { background: var(--fill); }
+  .menu .bad { color: var(--red); }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .grow { flex: 1; min-width: 0; }
+
+  .dot { width: 12px; height: 12px; border-radius: 4px; background: var(--grey); transition: background .3s; }
+  .dot.started { background: var(--green); }
+  .dot.pending { background: var(--amber); animation: pulse 1s ease-in-out infinite; }
+  .dot.failed { background: var(--red); }
+  .hchip { font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--fill-2); color: var(--ink-2); }
+  .hchip.passing { color: #1f9d48; background: rgba(48,193,90,.12); }
+  .hchip.critical { color: var(--red); background: rgba(255,69,58,.12); }
+  .hchip.warning { color: #c47f00; background: rgba(255,176,32,.15); }
+  .svc { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  .svc + .svc { margin-top: 6px; }
+  .dot.leaving { background: var(--grey); opacity: .5; }
+  /* The metrics panel: small charts (inline SVG), two to a row on wide screens. */
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px 22px; }
+  /* Tabs under the strip; the open one's body below. */
+  /* The underline is an inset shadow inside the button: nothing overflows the bar, so it never scrolls
+     (sideways only when the tabs don't fit). */
+  .tabs { display: flex; gap: 4px; margin: 22px 0 14px; border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; }
+  .tabs button { height: 40px; padding: 0 14px; font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+  .tabs button:hover { color: var(--ink); }
+  .tabs button.on { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+  /* (Not the page's one-line .sub: a digest or a check's text wraps here.) */
+  .kv .sub, .svc2 .sub { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; white-space: normal; overflow: visible; }
+  .svc2 + .svc2 { margin-top: 8px; }
+  .tab-tools { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13px; }
+  .tab-tools .seg { margin-left: 0; }
+  /* Traffic: two by two, larger, with dashed gridlines and a time axis. */
+  .charts.big { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 28px; }
+  .charts.big .chart svg { height: 160px; }
+  .chart .grid { stroke: var(--line); stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+  .chart h4 { gap: 10px; }
+  .chart h4 span:last-child { white-space: nowrap; flex: none; }
+  .chart .taxis { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+  .legend b { font-weight: 650; color: var(--ink); }
+  .tline { margin-top: 16px; font-size: 13px; color: var(--ink-2); }
+  .tline .bad { color: var(--red); }
+  /* Machines: one row each, its error under it; columns go as the page narrows. */
+  .lrow.mtrow { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 80px) minmax(0, 70px) minmax(0, 70px) minmax(0, 60px) minmax(0, 1fr) minmax(0, 40px);
+                gap: 12px; padding: 11px 12px; font-size: 13px; }
+  .lrow.mtrow > :not(.mt-id):not(.mt-err) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow.mtrow.head { font-size: 11px; padding-top: 4px; padding-bottom: 10px; }
+  .mtrow .mt-id { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .mtrow .mt-id .linkbtn { margin: 0; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+  .mtrow .mt-id .linkbtn:hover { color: var(--accent); }
+  .mtrow .mt-id .dot { flex: none; width: 10px; height: 10px; }
+  .mtrow .mt-logs { text-align: right; }
+  .mtrow .mt-logs .linkbtn { margin: 0; }
+  .mtrow .mt-err { grid-column: 1 / -1; color: var(--red); font-size: 12.5px; margin-top: -4px; overflow-wrap: anywhere; }
+  .chart h4 { margin: 0 0 4px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); display: flex; justify-content: space-between; }
+  .chart svg { display: block; width: 100%; height: 90px; overflow: visible; }
+  .chart .axis { stroke: var(--line); stroke-width: 1; }
+  .chart .lbl { fill: var(--ink-3); font-size: 10px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 11.5px; color: var(--ink-2); margin-top: 3px; }
+  .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
+  .seg { display: inline-flex; background: var(--fill); border-radius: 5px; padding: 2px; margin-left: auto; }
+  .seg button { font-size: 12px; padding: 1px 10px; border-radius: 4px; color: var(--ink-2); }
+  .seg button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+
+  .stepper { display: inline-flex; align-items: center; background: var(--fill); border-radius: 5px; padding: 2px; }
+  .stepper button { width: 24px; height: 24px; border-radius: 50%; font-size: 15px; line-height: 1; color: var(--ink); }
+  .stepper button:hover:not(:disabled) { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .stepper button:disabled { color: var(--ink-3); cursor: default; }
+  .stepper output { min-width: 22px; text-align: center; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+  details { margin-top: 12px; }
+  summary { font-size: 13px; color: var(--ink-2); cursor: pointer; list-style: none; user-select: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "›"; display: inline-block; margin-right: 6px; transition: transform .15s; }
+  details[open] summary::before { transform: rotate(90deg); }
+
+  .section-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin: 0 0 8px 2px; }
+
+  /* The Nodes page: pending joins as banners, then two tables, the control plane and edges, and the
+     workers. The columns go as the page narrows (the media queries below). */
+  .asks { display: grid; gap: 8px; margin-bottom: 20px; }
+  .ask { display: flex; align-items: center; gap: 12px; padding: 9px 9px 9px 14px; border-radius: var(--radius); font-size: 14px;
+         background: rgba(255,176,32,.14); border: 1px solid rgba(255,176,32,.5); }
+  .ask .dot { flex: none; }
+  .ask .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .ask .what .mono { font-size: 12.5px; }
+  .ask .when { color: var(--ink-2); }
+  .ask .btn { flex: none; height: 30px; padding: 0 14px; font-size: 13px; }
+  .ntab + .ntab { margin-top: 28px; }
+  /* The control plane: one row of facts (three columns of them below 1100 px, two on phones). */
+  .cpcard { display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(5, minmax(0, 1fr)); gap: 12px 16px; align-items: center; padding: 14px 16px;
+            border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
+  .cpcard .fact { min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
+  .cpcard .k { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+  .cpcard .warnf { color: var(--amber); font-weight: 600; }
+  .cpcard .pill { white-space: nowrap; }
+  @media (max-width: 1100px) { .cpcard { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cpcard .cpname { grid-column: 1 / -1; } }
+  @media (max-width: 600px) { .cpcard { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* Every track can shrink to 0 and every cell clips or ellipsizes, so a row fits whatever width it gets
+     (the breakpoints below only drop columns that would be too narrow to read). A fixed minimum here once
+     ran the Workers table ~35 px off the page between 1200 and 1250 px. */
+  .lrow > * { min-width: 0; }
+  .lrow.cprow { grid-template-columns: minmax(0, 1.4fr) minmax(0, 180px) minmax(0, 110px) minmax(0, 1.2fr) minmax(0, 100px); }
+  .lrow.cprow.erow { grid-template-columns: minmax(0, 1.2fr) minmax(0, 150px) minmax(0, 110px) minmax(0, 1.1fr) minmax(0, 1.4fr) minmax(0, 100px); }
+  .lrow.wrow { grid-template-columns: minmax(0, 1.3fr) minmax(0, 180px) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 80px) minmax(0, 110px) minmax(0, 100px); }
+  .lrow.dead { opacity: .55; }
+  .lrow.cprow .pill, .lrow.wrow .pill { white-space: nowrap; max-width: 100%; overflow: hidden; }
+  .lrow .hb, .lrow .img, .lrow .mip, .lrow .seen, .lrow .lsn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow .cpu, .lrow .memc { overflow: hidden; }
+  .lrow .under, .cpcard .under { margin-top: 2px; font-size: 12px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow .ep { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow .meter { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lrow .meter { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .lrow .meter b { color: var(--ink); font-weight: 600; }
+  .lrow .meter .bar { max-width: 200px; }
+  .lrow .img, .lrow .seen { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .lrow .img b { color: var(--ink); font-weight: 600; }
+  .linkbtn { color: var(--accent); font-weight: 600; font-size: 13px; padding: 0; margin-left: 6px; }
+  .linkbtn:hover { text-decoration: underline; }
+  .lrow .role { margin-left: 8px; font: 11px var(--mono); color: var(--ink-2); background: var(--fill); padding: 1px 6px; border-radius: 5px; font-weight: 400; }
+  .lrow .mono { font-size: 12.5px; }
+  .mesh-sub { margin-right: auto; font-size: 13px; }
+  .mesh-sub code { font: 12px var(--mono); }
+  .copyrow { display: flex; align-items: flex-start; gap: 6px; padding: 9px 6px 9px 12px; border-radius: var(--radius); background: var(--fill); border: 1px solid var(--line); }
+  .copyrow code { flex: 1; min-width: 0; font-size: 12.5px; overflow-wrap: anywhere; padding-top: 5px; }
+  /* The Add node dialog: worker or edge, the edge's fields, one command over several lines. */
+  .tk-fields { grid-template-columns: 1fr 1fr; }
+  #tk-cmd { white-space: pre-wrap; }
+  .tk-note { margin: 8px 0 0; font-size: 13px; }
+  /* Orgs & users: one row per org, its users as chips. */
+  .lrow.orow { grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, 70px) 110px; }
+  .lrow.orow .oname { font-size: 15px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .uchips { display: flex; flex-wrap: wrap; gap: 4px 6px; min-width: 0; }
+  .uchip { font-size: 13px; padding: 2px 9px; border-radius: 999px; background: var(--fill-2); }
+  .uchip small { color: var(--ink-2); margin-left: 3px; }
+  .lrow.orow .oapps { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .lrow.orow .oapps b { color: var(--ink); font-size: 15px; }
+  .lrow.orow.head .oapps { font-size: inherit; color: inherit; }
+  .uchips .muted { font-size: 13px; }
+  .lrow.orow .act { text-align: right; }
+  .lrow.orow .act .btn { height: 30px; padding: 0 14px; font-size: 13px; }
+  /* A dialog's equivalent CLI command, as the deploy dialog shows it, with a copy button. */
+  .cli.clicopy { display: flex; align-items: flex-start; gap: 6px; padding-right: 6px; }
+  .cli.clicopy > span:nth-child(2) { flex: 1; min-width: 0; }
+  .cli.clicopy .icon-btn { margin: -6px 0; flex: none; }
+  select { width: 100%; height: 40px; padding: 0 10px; border-radius: 5px; border: 1px solid var(--line); background: var(--fill); color: inherit; font: inherit; outline: none; }
+  select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .bar { height: 5px; border-radius: 3px; background: var(--fill-2); margin-top: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 3px; background: var(--ink-2); transition: width .3s; }
+  .bar i.warm { background: var(--amber); }
+  .bar i.over { background: var(--red); }
+  .name .swatch { display: inline-flex; align-items: center; gap: 5px; }
+  .sw { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+  .name .sw { width: 10px; height: 10px; border-radius: 3px; margin-right: 2px; }
+
+  .quiet { font-size: 13px; color: var(--ink-3); padding: 8px 0; }
+
+  /* failing machines, inline on the card */
+  .errline { margin-top: 10px; padding: 8px 10px; border-radius: var(--radius); background: rgba(255,69,58,.08); color: var(--red); font-size: 13px; word-break: break-word; }
+  .errline b { font-weight: 600; }
+  .graveyard { margin-top: 6px; }
+  .graveyard > summary { padding: 6px 2px; }
+  .graveyard .apps { margin-top: 8px; }
+
+  .empty { text-align: center; padding: 56px 20px; }
+  .empty .big { font-size: 40px; }
+  .empty .btn { margin-top: 14px; }
+  .empty a { color: var(--accent); font-weight: 600; }
+  .empty h2 { font-size: 19px; margin: 10px 0 4px; }
+  /* Apps, empty and the cluster not ready (the operator's): what's missing, a step each. */
+  .ready { list-style: none; margin: 18px auto 0; padding: 0; max-width: 560px; text-align: left; border-top: 1px solid var(--line); }
+  .ready li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 4px; border-bottom: 1px solid var(--line); }
+  .ready .num { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--fill-2); font-size: 13px; font-weight: 650; }
+  .ready li.done .num { background: rgba(48,193,90,.15); color: #1f9d48; }
+  .ready .what b { display: block; font-size: 15px; }
+  .ready .what small { font-size: 13px; color: var(--ink-2); }
+  .ready .how { min-width: 0; font-size: 13px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ready .how .ok { color: #1f9d48; font-weight: 600; }
+  .ready .how a { text-decoration: none; }
+  .ready .how .btn { margin: 0; height: 32px; padding: 0 14px; font-size: 13px; }
+  .ready + .btn { margin-top: 20px; }
+  .ready-note { margin: 8px 0 0; font-size: 13px; }
+
+  /* sheet */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.28); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+           display: grid; place-items: center; padding: 16px; z-index: 10; animation: fade .15s; }
+  .sheet { width: 100%; max-width: 640px; padding: 24px; max-height: calc(100vh - 32px); overflow-y: auto; animation: rise .2s cubic-bezier(.2,.9,.3,1.2); }
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes rise { from { transform: translateY(12px) scale(.98); opacity: 0; } }
+  .sheet h2 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+  .sheet-head { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; }
+  .sheet-head .icon-btn { font-size: 24px; line-height: 1; margin-left: -8px; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .choice { display: grid; gap: 6px; align-content: start; padding: 18px 18px 20px; border-radius: var(--radius); text-align: left; background: var(--fill); border: 1px solid transparent; transition: background .15s, border-color .15s; }
+  .choice:hover { border-color: var(--grey); }
+  .choice:focus-visible, .tpl:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Selected (a click; Continue goes on): the accent border on the accent-soft fill. */
+  .choice.on, .choice.alt.on { background: var(--accent-soft); border-color: var(--accent); }
+  .choice.alt.on b { color: var(--ink); }
+  .choice .em { font-size: 28px; line-height: 1; }
+  .choice b { font-size: 16px; font-weight: 650; margin-top: 6px; }
+  .choice small { font-size: 13px; line-height: 1.4; color: var(--ink-2); }
+  /* The recommended start (a template): a badge, selected and focused when the dialog opens. The other
+     one is quieter: no fill until selected. */
+  .choice .rec-badge { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 650;
+                       letter-spacing: .02em; vertical-align: 2px; }
+  .choice.alt { background: transparent; border-color: var(--line); }
+  .choice.alt .em { opacity: .7; }
+  .choice.alt b { font-weight: 600; color: var(--ink-2); }
+  .tpl-note { font-size: 12px; margin-top: 10px; }
+  .tpl .ok { margin-left: 5px; color: var(--green); font-weight: 700; }
+  .tpl small.bad { color: var(--red); }
+  .tpl.broken { opacity: .6; }
+  .picked .verdict { display: block; font-size: 12px; margin-top: 3px; white-space: normal; }
+  .picked .verdict.ok { color: #1f9d48; }
+  .picked .verdict.bad { color: var(--red); }
+  .picked { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); background: var(--fill); margin-bottom: 2px; }
+  .picked .em { font-size: 26px; flex: none; }
+  .picked .t { min-width: 0; flex: 1; }
+  .picked b { display: block; font-size: 15px; font-weight: 650; }
+  .picked small { display: block; font-size: 12px; color: var(--ink-3); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .picked .btn { height: 30px; padding: 0 12px; font-size: 13px; flex: none; }
+  details.adv { margin-top: 16px; }
+  details.adv > summary { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+  details.adv > summary .n { font-weight: 400; color: var(--ink-3); margin-left: 4px; }
+  label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 14px 0 6px; white-space: nowrap; }
+  label .hint { font-weight: 400; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; }
+  .i { width: 15px; height: 15px; flex: none; color: var(--ink-2); }
+  .btn .i { color: inherit; }
+  .frow { display: grid; gap: 0 12px; }
+  /* minmax(0, …): a column may be narrower than its content (a label's long hint), so a row fits the
+     dialog; the hint shrinks with an ellipsis instead. */
+  .frow.name-port { grid-template-columns: minmax(0, 1fr) 120px; }
+  .frow.size { grid-template-columns: auto minmax(0, 1fr); }
+  .frow.svc-row { grid-template-columns: auto minmax(0, 1fr); }
+  .frow > div { min-width: 0; }
+  label .hint { min-width: 0; }
+  /* The dialog's controls are 40 px tall, like its text inputs: the Machines stepper, CPUs, Memory, HTTP/TCP. */
+  #deploy-form .stepper { height: 40px; padding: 3px; }
+  #deploy-form .stepper button { width: 34px; height: 34px; font-size: 18px; }
+  #deploy-form .stepper output { min-width: 34px; font-size: 14px; }
+  #deploy-form .seg button { height: 34px; }
+  /* Memory: a row of its own, seven equal columns; on phones four (4 + 3), so 8 GB is never alone. */
+  #f-memory { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  textarea {
+    width: 100%; min-height: 40px; padding: 9px 12px; border-radius: 5px; border: 1px solid var(--line); background: var(--fill); outline: none;
+    font: 13px/1.5 var(--mono); color: inherit; resize: vertical;
+  }
+  textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--card); }
+  textarea.invalid { border-color: var(--red); }
+  input[type=text], input[type=number], input[type=password] {
+    width: 100%; height: 40px; padding: 0 12px; border-radius: 5px; border: 1px solid var(--line); background: var(--fill); outline: none;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--card); }
+  input.invalid { border-color: var(--red); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .seg { display: flex; background: var(--fill); border-radius: var(--radius); padding: 3px; gap: 2px; }
+  .seg button { white-space: nowrap; flex: 1; height: 32px; border-radius: 4px; font-size: 13px; font-weight: 550; color: var(--ink-2); }
+  .seg button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+  .confirm p { margin: 0 0 4px; font-size: 14px; color: var(--ink-2); }
+  .confirm code { font-family: var(--mono); background: var(--fill); padding: 1px 5px; border-radius: 5px; color: var(--ink); }
+  .form-err { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 1em; }
+  .sh-cmd { color: var(--sh-cmd); font-weight: 700; }
+  .sh-sub { color: var(--ink); }
+  .sh-flag { color: var(--sh-flag); }
+  .sh-str { color: var(--sh-str); }
+  .sh-ph { color: var(--sh-ph); font-style: italic; }
+  .sh-op { color: var(--sh-op); }
+  .sh-com { color: var(--sh-ph); }
+  .sh-prompt { user-select: none; -webkit-user-select: none; }
+  /* Under each flyyy command, once: how to get the CLI, from the page's flake. */
+  .cli-hint { margin-top: 6px; font-size: 12px; color: var(--ink-2); overflow-wrap: anywhere; }
+  .cli-hint .mono { font-size: 12px; }
+  .cli { margin-top: 14px; padding: 10px 12px; border-radius: var(--radius); background: var(--fill); color: var(--ink-2); word-break: break-all; }
+  .tpl-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .tpl-tabs button { flex: none; height: 30px; padding: 0 12px; border-radius: 5px; background: var(--fill); font-size: 13px; font-weight: 550; color: var(--ink-2); white-space: nowrap; }
+  .tpl-tabs button:hover { color: var(--ink); background: var(--fill-2); }
+  .tpl-tabs button.on { background: var(--ink); color: var(--bg); }
+  .tpl-tabs .n { margin-left: 5px; opacity: .5; font-weight: 500; }
+  .tpl-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-height: 340px; overflow-y: auto; padding: 2px; margin: -2px; }
+  .tpl { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 9px 10px; border-radius: var(--radius); text-align: left; background: var(--fill); border: 1px solid transparent; }
+  .tpl:hover { background: var(--fill-2); }
+  .tpl.on { background: var(--accent-soft); border-color: var(--accent); }
+  .tpl .em { flex: none; width: 26px; font-size: 20px; text-align: center; }
+  .tpl .t { min-width: 0; }
+  .tpl b, .tpl small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tpl b { font-size: 13px; font-weight: 600; }
+  .tpl small { font-size: 12px; color: var(--ink-2); }
+  .tpl .badge { margin-left: 5px; padding: 0 4px; border: 1px solid var(--line); border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: .04em; color: var(--ink-2); vertical-align: 1px; }
+
+  /* toast */
+  .toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: grid; gap: 8px; z-index: 20; width: max-content; max-width: calc(100vw - 32px); }
+  .toast { background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: var(--radius); font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); animation: rise .2s; }
+  .toast.bad { background: var(--red); color: #fff; }
+
+  /* Narrower, the node tables drop columns: endpoints, images and mesh IPs, then heartbeats, then the
+     meters, so nothing runs off the page. */
+  @media (max-width: 1100px) {
+    .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stats .stat:last-child { grid-column: span 2; }
+    .lrow.mtrow { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 76px) minmax(0, 56px) minmax(0, 54px) minmax(0, 1fr); }
+    .mtrow .mt-if, .mtrow .mt-logs { display: none; }
+  }
+  @media (max-width: 1200px) {
+    .lrow.cprow { grid-template-columns: minmax(0, 1.4fr) minmax(0, 180px) minmax(0, 100px); }
+    .lrow.cprow.erow { grid-template-columns: minmax(0, 1.2fr) minmax(0, 180px) minmax(0, 1.2fr) minmax(0, 100px); }
+    .lrow.wrow { grid-template-columns: minmax(0, 1.3fr) minmax(0, 180px) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 100px); }
+    .lrow.cprow .ep, .lrow.cprow .mip, .lrow.wrow .img, .lrow.wrow .mip { display: none; }
+  }
+  @media (max-width: 900px) {
+    .lrow.wrow { grid-template-columns: minmax(0, 1.3fr) minmax(0, 180px) minmax(0, 1fr) minmax(0, 1fr); }
+    .lrow.wrow .hb { display: none; }
+  }
+  @media (max-width: 600px) {
+    .lrow.cprow, .lrow.cprow.erow { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .lrow.cprow .lsn { display: none; }
+    .lrow.wrow { grid-template-columns: minmax(0, 1fr) auto; }
+    .lrow.wrow .cpu, .lrow.wrow .memc { display: none; }
+    .lrow.orow { grid-template-columns: minmax(0, 1fr) auto; }
+    .lrow.mtrow { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; }
+    .mtrow .mt-rps, .mtrow .mt-cpu, .mtrow .mt-mem { display: none; }
+    .charts.big { grid-template-columns: minmax(0, 1fr); }
+    .evrow { grid-template-columns: 64px minmax(0, 1fr); gap: 2px 10px; }
+    .evrow > :nth-child(3) { grid-column: 2; }
+    .lrow.orow > .uchips { grid-column: 1 / -1; grid-row: 2; }
+    .lrow.orow .oapps, .lrow.orow.head > :nth-child(2) { display: none; }
+    .ask { flex-wrap: wrap; }
+  }
+  @media (max-width: 760px) {
+    .shell { flex-direction: column; align-items: stretch; }
+    .side, body.nav-collapsed .side { position: sticky; top: 0; z-index: 8; width: auto; height: auto; flex-direction: row; align-items: center; gap: 4px;
+            padding: 8px 12px; border-right: 0; border-bottom: 1px solid var(--line); background: var(--bar);
+            backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px); }
+    .brand { margin: 0 auto 0 0; }
+    body.nav-collapsed .side h1, body.nav-collapsed .side .label { display: inline; }
+    .side a.page .n, .side .collapse { display: none !important; }
+    /* The profile button: just its avatar in the header; the menu opens below it. */
+    .side .foot, body.nav-collapsed .side .prof { width: auto; height: 38px; margin-top: 0; padding: 0 4px; }
+    .side .foot .label, body.nav-collapsed .side .foot .label { display: none; }
+  }
+  @media (max-width: 560px) {
+    #f-memory { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    .wrap { padding: 20px 16px 80px; }
+    /* The phone header: the logo, the current page's label, the others as icons, so three pages fit. */
+    .side h1, body.nav-collapsed .side h1, .side a.page:not(.on) .label, body.nav-collapsed .side a.page:not(.on) .label { display: none; }
+    .side a.page:not(.on) { padding: 0 10px; }
+    .two, .tk-fields, .frow.name-port, .frow.size, .frow.svc-row { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    /* The app page's four tabs, in one row. */
+    .tabs { gap: 0; }
+    .tabs button { padding: 0 8px; }
+    .stat { padding: 12px 14px; }
+    .lrow { grid-template-columns: minmax(0, 1fr) auto 52px 14px; }
+    .lrow .im, .lrow .ds { display: none; }
+    .detail-head { flex-wrap: wrap; }
+    .detail-head .tools { margin-left: 0; }
+    .tpl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 50vh; }
+    .choices { grid-template-columns: 1fr; }
+    .ready li { grid-template-columns: 28px minmax(0, 1fr); }
+    .ready .how { grid-column: 2; text-align: left; }
+    .tpl small { display: none; }
+    .tpl { gap: 8px; padding: 9px 8px; }
+    .tpl .em { width: 20px; font-size: 17px; }
+  }
+
+  /* Sign in: a full page in place of the shell. The brand panel stays orange in dark mode. */
+  body:has(#signin:not([hidden])) .shell { display: none; }
+  #signin { position: fixed; inset: 0; z-index: 10; overflow-y: auto; background: var(--bg); animation: fade .2s; }
+  #signin .why:empty { display: none; }
+  #signin .why { color: var(--red); font-size: 13px; margin-top: 8px; }
+  .si-help { margin-top: 14px; font-size: 13px; color: var(--ink-2); }
+  .si-help p { margin: 10px 0 6px; }
+  .si-src { display: inline-flex; align-items: center; gap: 7px; margin-top: 22px; font-size: 13px; color: var(--ink-2); text-decoration: none; }
+  .si-src:hover { color: var(--ink); }
+  .si-src .i { width: 16px; height: 16px; color: inherit; }
+  .si-help code.blk { display: block; padding: 8px 10px; border-radius: var(--radius); background: var(--fill); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+  .si { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .si .brandside { position: relative; overflow: hidden; color: #fff; padding: 40px 48px; display: flex; flex-direction: column; justify-content: space-between;
+    background: radial-gradient(120% 90% at 0% 0%, #e2531a 0%, var(--accent) 50%, #ff9a55 100%); }
+  .si .brandside .top { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; }
+  .si .brandside .logo { background: rgba(255,255,255,.18); }
+  .si .brandside h2 { font-size: 34px; line-height: 1.12; letter-spacing: -.025em; margin: 0 0 12px; max-width: 15ch; }
+  .si .brandside p { margin: 0; opacity: .85; max-width: 40ch; font-size: 15px; }
+  .si .net { width: 100%; max-width: 440px; margin: 28px 0; }
+  .si .net line { stroke: rgba(255,255,255,.45); stroke-width: 1.5; stroke-dasharray: 4 5; animation: flow 1.2s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset: -18; } }
+  .si .net circle { fill: #fff; }
+  .si .net text { fill: #fff; font: 600 11px var(--sans); opacity: .9; }
+  .si .formside { display: grid; place-items: center; padding: 32px 24px; }
+  .si form { width: 100%; max-width: 360px; }
+  .si form h2 { margin: 0 0 4px; font-size: 24px; letter-spacing: -.015em; }
+  .si form .sub { margin: 0 0 10px; color: var(--ink-2); font-size: 14px; }
+  .si .btn.primary { width: 100%; justify-content: center; height: 42px; margin-top: 16px; font-size: 15px; }
+  @media (prefers-reduced-motion: reduce) { .si .net line, #signin { animation: none; } }
+  @media (max-width: 800px) {
+    .si { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+    .si .brandside { padding: 20px 16px; }
+    .si .brandside h2 { font-size: 22px; margin: 14px 0 4px; max-width: none; }
+    .si .brandside p, .si .net { display: none; }
+    .si .formside { place-items: start center; padding-top: 28px; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16v4M17 18h4"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 3h8l10 10-8 8L3 11z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3L2 8l10 5 10-5z"/><path d="M2 13l10 5 10-5"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></symbol>
+  <symbol id="i-mem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="20" height="11" rx="2"/><path d="M6 10v3M10 10v3M14 10v3M18 10v3M6 17v2M18 17v2"/></symbol>
+  <symbol id="i-term" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-5-6-5M12 19h8"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15c-1.5 1.3-2 4-2 4s2.7-.5 4-2"/><path d="M14.5 4.5C17 2 21 3 21 3s1 4-1.5 6.5L13 16l-5-5z"/><path d="M8 11l-3 0 2-3 4 0M13 16v3l3-2 0-4"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></symbol>
+  <symbol id="i-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></symbol>
+  <symbol id="i-github" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-disk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12H2M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/><path d="M6 16h.01M10 16h.01"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="plane" viewBox="0 0 24 24"><path d="M3 11.5 21 4l-5.5 16-3.8-6.2z" fill="#fff"/><path d="m11.7 13.8 9.3-9.8" stroke="var(--accent)" stroke-width="1.4"/></symbol>
+</svg>
+
+<div class="shell">
+  <nav class="side" id="side">
+    <a class="brand" href="#apps"><div class="logo"><svg><use href="#plane"/></svg></div><h1>fl<span class="yyy">yyy</span></h1></a>
+    <a class="page" href="#apps" data-page="apps"><svg class="i"><use href="#i-box"/></svg><span class="label">Apps</span><span class="n" id="nav-apps"></span></a>
+    <a class="page" href="#nodes" data-page="nodes" hidden><svg class="i"><use href="#i-server"/></svg><span class="label">Nodes</span><span class="n" id="nav-nodes"></span></a>
+    <a class="page" href="#orgs" data-page="orgs" hidden><svg class="i"><use href="#i-users"/></svg><span class="label">Orgs &amp; users</span><span class="n" id="nav-orgs"></span></a>
+    <a class="foot src" id="src-link" target="_blank" rel="noopener" title="Source on GitHub" aria-label="Source on GitHub" hidden><svg class="i"><use href="#i-github"/></svg><span class="label">Source</span></a>
+    <button class="foot prof" id="who" aria-haspopup="menu" aria-expanded="false" aria-controls="who-menu" hidden><span class="av" id="who-av" aria-hidden="true"></span><span class="label"><b id="who-text"></b><small id="who-sub"></small></span></button>
+    <button class="collapse" id="nav-toggle" aria-label="Collapse the sidebar"><svg class="i"><use href="#i-sidebar"/></svg></button>
+  </nav>
+  <main id="main" class="wrap">
+    <div class="problem" id="problem" hidden></div>
+    <section id="page-apps">
+      <div class="toolbar"><button class="btn primary" id="new-app">+ New app</button></div>
+      <div class="apps" id="apps"></div>
+      <details class="graveyard" id="graveyard" hidden><summary id="graveyard-title"></summary><div class="apps" id="gone"></div></details>
+    </section>
+    <section id="page-app" hidden>
+      <a class="back" href="#apps"><span aria-hidden="true">‹</span>Apps</a>
+      <div id="app-detail"></div>
+    </section>
+    <section id="page-orgs" hidden>
+      <div class="toolbar"><span class="muted mesh-sub" id="orgs-sub"></span><button class="btn plain" id="new-user">+ New user</button><button class="btn primary" id="new-org">+ New org</button></div>
+      <div id="orgs"></div>
+    </section>
+    <section id="page-nodes" hidden>
+      <div class="toolbar"><span class="muted mesh-sub" id="nodes-sub"></span><button class="btn primary" id="mesh-token" hidden>+ Add node</button></div>
+      <div id="nodes"></div>
+    </section>
+  </main>
+</div>
+<div class="who-menu" id="who-menu" role="menu" hidden><div class="who-id" id="who-id"></div><button id="sign-out" role="menuitem" hidden>Sign out</button></div>
+
+<div class="scrim" id="deploy" hidden>
+  <form class="card sheet" id="deploy-form" novalidate>
+    <div class="sheet-head">
+      <button type="button" class="icon-btn" id="deploy-back" aria-label="Back" hidden>‹</button>
+      <h2 id="deploy-title">New app</h2>
+    </div>
+
+    <div id="step-start" class="choices">
+      <button type="button" class="choice rec" data-start="template">
+        <span class="em">✨</span><b>From a template <span class="rec-badge">Recommended</span></b>
+        <small id="choice-template-sub">Ready-made apps: databases, web servers, observability…</small>
+      </button>
+      <button type="button" class="choice alt" data-start="image">
+        <span class="em">📦</span><b>Your own image</b>
+        <small>Any image pinned by digest, with your port, command and environment</small>
+      </button>
+    </div>
+
+    <div id="step-template" hidden>
+      <div class="tpl-tabs" id="f-groups"></div>
+      <div class="tpl-grid" id="f-templates"></div>
+      <div class="muted tpl-note" id="tpl-note"></div>
+    </div>
+
+    <div id="step-config" hidden>
+    <div class="picked" id="f-picked" hidden></div>
+    <div class="frow name-port">
+      <div>
+        <label for="f-name"><svg class="i"><use href="#i-tag"/></svg>Name <span class="hint" id="f-name-hint">becomes &lt;name&gt;.flyyy.localhost</span></label>
+        <input type="text" id="f-name" placeholder="blue" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <label for="f-port"><svg class="i"><use href="#i-plug"/></svg>Port</label>
+        <input type="number" id="f-port" min="1" max="65535" value="80">
+      </div>
+    </div>
+    <div class="frow svc-row">
+      <div>
+        <label><svg class="i"><use href="#i-globe"/></svg>Served as</label>
+        <div class="seg" id="f-proto" data-value="http"><button type="button" data-v="http">HTTP</button><button type="button" data-v="tcp">TCP</button></div>
+      </div>
+      <div id="f-check-wrap">
+        <label for="f-check"><svg class="i"><use href="#i-plug"/></svg>Health check <span class="hint" title="A path that answers 2xx or 3xx. Left empty, any answer below 500 on / counts.">optional</span></label>
+        <input type="text" id="f-check" class="mono" placeholder="/healthz" autocomplete="off" spellcheck="false">
+      </div>
+      <div id="f-ext-wrap" hidden>
+        <label for="f-ext"><svg class="i"><use href="#i-plug"/></svg>Edge port <span class="hint">not 80 or 443</span></label>
+        <input type="number" id="f-ext" min="1" max="65535" value="8080">
+      </div>
+    </div>
+    <div id="f-image-wrap">
+      <label for="f-image"><svg class="i"><use href="#i-box"/></svg>Image <span class="hint">pinned by digest</span></label>
+      <input type="text" id="f-image" class="mono" placeholder="traefik/whoami@sha256:…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="frow size">
+      <div>
+        <label><svg class="i"><use href="#i-layers"/></svg>VMs</label>
+        <div class="stepper"><button type="button" data-step="-1">−</button><output id="f-count">1</output><button type="button" data-step="1">+</button></div>
+      </div>
+      <div>
+        <label><svg class="i"><use href="#i-cpu"/></svg>CPUs</label>
+        <div class="seg" id="f-cpus" data-value="1"><button type="button">1</button><button type="button">2</button><button type="button">4</button><button type="button">8</button></div>
+      </div>
+    </div>
+    <div>
+      <label><svg class="i"><use href="#i-mem"/></svg>Memory</label>
+      <div class="seg" id="f-memory" data-value="128"><button type="button" data-v="128">128 MB</button><button type="button" data-v="256">256 MB</button><button type="button" data-v="512">512 MB</button><button type="button" data-v="1024">1 GB</button><button type="button" data-v="2048">2 GB</button><button type="button" data-v="4096">4 GB</button><button type="button" data-v="8192">8 GB</button></div>
+    </div>
+    <details class="adv" id="f-adv">
+    <summary id="f-adv-title">Command and environment</summary>
+    <label for="f-cmd"><svg class="i"><use href="#i-term"/></svg>Command <span class="hint" title="Split like a shell, quotes work. {id} becomes the VM's id.">optional</span></label>
+    <input type="text" id="f-cmd" class="mono" placeholder="image default" autocomplete="off" spellcheck="false">
+    <label for="f-env"><svg class="i"><use href="#i-layers"/></svg>Environment <span class="hint" id="f-env-hint">optional, one per line</span></label>
+    <textarea id="f-env" class="mono" rows="2" placeholder="POSTGRES_PASSWORD=secret" autocomplete="off" spellcheck="false"></textarea>
+    </details>
+    <div class="cli mono" id="f-cli"></div>
+    <div class="cli-hint" data-cli-hint></div>
+    <div class="form-err" id="deploy-err"></div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn plain" id="deploy-cancel">Cancel</button>
+      <button type="button" class="btn primary" id="deploy-next">Continue</button>
+      <button class="btn primary" id="deploy-go" hidden><svg class="i"><use href="#i-rocket"/></svg>Deploy</button>
+    </div>
+  </form>
+</div>
+
+<div id="signin" hidden>
+  <div class="si">
+    <div class="brandside">
+      <div class="top"><div class="logo"><svg><use href="#plane"/></svg></div>flyyy</div>
+      <div>
+        <svg class="net" viewBox="0 0 440 150" aria-hidden="true">
+          <line x1="60" y1="75" x2="200" y2="40"/><line x1="60" y1="75" x2="200" y2="110"/>
+          <line x1="200" y1="40" x2="370" y2="25"/><line x1="200" y1="40" x2="370" y2="75"/><line x1="200" y1="110" x2="370" y2="75"/><line x1="200" y1="110" x2="370" y2="125"/>
+          <circle cx="60" cy="75" r="9"/><circle cx="200" cy="40" r="7"/><circle cx="200" cy="110" r="7"/>
+          <circle cx="370" cy="25" r="6"/><circle cx="370" cy="75" r="6"/><circle cx="370" cy="125" r="6"/>
+          <text x="60" y="102" text-anchor="middle">users</text><text x="200" y="138" text-anchor="middle">edges</text><text x="370" y="148" text-anchor="middle">VMs</text>
+        </svg>
+        <h2>Turn your machines into a cloud.</h2>
+        <p>Containers run as Cloud Hypervisor microVMs across all of them, scale in seconds, and the edges balance every request.</p>
+      </div>
+      <div></div>
+    </div>
+    <div class="formside">
+      <form id="signin-form" novalidate>
+        <h2>Sign in</h2>
+        <p class="sub">With your API token. It stays in this tab.</p>
+        <label for="si-token">Token</label>
+        <input type="password" id="si-token" autocomplete="off" spellcheck="false" placeholder="flyyy_…">
+        <div class="why" id="si-err"></div>
+        <button type="submit" class="btn primary">Sign in</button>
+        <details class="si-help">
+          <summary>Where do I get a token?</summary>
+          <p>The operator creates one for you:</p>
+          <code class="blk mono">flyyy users create alice --org acme</code>
+          <p>The operator's own is on the control host, in <code>/var/lib/flyyy-operator/token</code>.</p>
+        </details>
+        <a class="si-src" id="si-src" target="_blank" rel="noopener" hidden><svg class="i"><use href="#i-github"/></svg>Source on GitHub</a>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="token" hidden>
+  <div class="card sheet" style="max-width:600px">
+    <div class="sheet-head">
+      <button type="button" class="icon-btn" id="tk-back" aria-label="Back" hidden>‹</button>
+      <h2 id="tk-title">Add node</h2>
+    </div>
+    <div id="tk-start" class="choices">
+      <button type="button" class="choice" data-kind="worker" aria-pressed="false">
+        <span class="em">🖥️</span><b>Worker</b>
+        <small>Runs your apps' VMs. Any Linux machine with KVM; it can sit behind NAT.</small>
+      </button>
+      <button type="button" class="choice" data-kind="edge" aria-pressed="false">
+        <span class="em">🌐</span><b>Edge</b>
+        <small>Serves your apps' HTTPS to the internet. Needs a public IP and the TLS certificate.</small>
+      </button>
+    </div>
+    <div id="tk-form" hidden>
+    <label for="tk-name">Name <span class="hint">optional</span></label>
+    <input type="text" id="tk-name" placeholder="the machine's hostname" autocomplete="off" spellcheck="false">
+    <div class="frow tk-fields" id="tk-edge" hidden>
+      <div><label for="tk-listen">Listen <span class="hint">HTTPS, IPv4 + IPv6</span></label><input type="text" id="tk-listen" placeholder="[::]:443" autocomplete="off" spellcheck="false"></div>
+      <div><label for="tk-cert">TLS certificate <span class="hint">on the node</span></label><input type="text" id="tk-cert" placeholder="~/flyyy-tls/cert.pem" autocomplete="off" spellcheck="false"></div>
+      <div><label for="tk-key">TLS key</label><input type="text" id="tk-key" placeholder="~/flyyy-tls/key.pem" autocomplete="off" spellcheck="false"></div>
+    </div>
+    <label>On the new machine <span class="hint">as a user with sudo</span></label>
+    <div class="copyrow"><code id="tk-cmd" class="mono"></code><button class="icon-btn" data-copy="tk-cmd" aria-label="Copy command"><svg class="i"><use href="#i-copy"/></svg></button></div>
+    <p class="muted tk-note">Works once, for 24 hours. The node shows up here for you to approve.</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn plain" id="tk-cancel">Cancel</button>
+      <button type="button" class="btn primary" id="tk-next">Continue</button>
+      <button type="button" class="btn primary" id="tk-done" hidden>Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="od" hidden>
+  <form class="card sheet" id="od-form" style="max-width:480px" novalidate>
+    <div class="sheet-head"><h2 id="od-title"></h2></div>
+    <div id="od-ask">
+      <label for="od-name">Name <span class="hint">lowercase, up to 20</span></label>
+      <input type="text" id="od-name" autocomplete="off" spellcheck="false">
+      <div id="od-org-wrap"><label for="od-org">Org</label><select id="od-org"></select></div>
+      <div class="cli mono clicopy"><span class="sh-op sh-prompt">$</span><span id="od-cli"></span><button type="button" class="icon-btn" data-copy="od-cli" aria-label="Copy command"><svg class="i"><use href="#i-copy"/></svg></button></div>
+      <div class="cli-hint" data-cli-hint></div>
+      <div class="form-err" id="od-err"></div>
+    </div>
+    <div id="od-done" hidden>
+      <label id="od-token-label"></label>
+      <div class="copyrow"><code id="od-token" class="mono"></code><button type="button" class="icon-btn" data-copy="od-token" aria-label="Copy token"><svg class="i"><use href="#i-copy"/></svg></button></div>
+      <p class="muted tk-note">You won't see it again. Send it to them now.</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn plain" id="od-cancel">Cancel</button>
+      <button class="btn primary" id="od-go">Create</button>
+    </div>
+  </form>
+</div>
+
+<div class="scrim" id="logs" hidden>
+  <div class="card sheet" style="max-width:880px">
+    <div class="sheet-head"><h2 id="logs-title"></h2></div>
+    <p class="muted" id="logs-sub" style="margin:0 0 10px;font-size:13px"></p>
+    <pre class="logs" id="logs-text"></pre>
+    <div class="actions"><button type="button" class="btn plain" id="logs-refresh">Refresh</button><button type="button" class="btn primary" id="logs-close">Close</button></div>
+  </div>
+</div>
+
+<div class="scrim" id="confirm" hidden>
+  <form class="card sheet confirm" id="confirm-form" style="max-width:420px" novalidate>
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-text"></p>
+    <label for="confirm-in">Type <code id="confirm-name"></code> to confirm</label>
+    <input type="text" id="confirm-in" autocomplete="off" spellcheck="false">
+    <div class="cli mono clicopy" id="confirm-cli-row" hidden><span class="sh-op sh-prompt">$</span><span id="confirm-cli"></span><button type="button" class="icon-btn" data-copy="confirm-cli" aria-label="Copy command"><svg class="i"><use href="#i-copy"/></svg></button></div>
+    <div class="cli-hint" id="confirm-cli-hint" data-cli-hint hidden></div>
+    <div class="actions">
+      <button type="button" class="btn plain" id="confirm-cancel">Cancel</button>
+      <button class="btn red" id="confirm-go" disabled>Destroy</button>
+    </div>
+  </form>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const MAX_COUNT = 20;
+let apps = [];            // GET /v1/apps, each with .detail from GET /v1/apps/<name>
+let load = { app: "", data: null, error: "" };  // GET /v1/apps/<shown app>/load (pollLoad)
+let loadTimer;
+let metrics = { app: "", window: "5m", data: null, error: "" };  // GET /v1/apps/<shown app>/metrics (pollMetrics)
+let metricsTimer;
+let workers = null;       // GET /v1/workers: capacity and what's allocated on each (null: unavailable)
+let me = null;            // GET /v1/whoami: { operator: true } or { user, org }; null until known
+let orgs = null, users = null;  // GET /v1/orgs and /v1/users: the operator's only (null otherwise)
+let mesh = null;          // GET /v1/mesh, or { none: true } before `flyyy init`, or { error } when unreachable
+let openMenu = "";        // name whose ⋯ menu is open
+let scaleOpen = "", scaleDraft = 0;  // the app whose Scale panel is open, and the count being chosen there
+let pending = {};         // name -> count the operator just asked for, until the API reflects it
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+// A shell command as HTML, colored per line: the command word (again after sudo/env), its subcommand,
+// flags (up to any =), quoted strings, <placeholders>, a trailing \ and a "$ " prompt, # comments. Every
+// piece goes through esc, and the text (what copy reads) is unchanged.
+// shortcut: only the subcommands the dashboard shows (a group like `users` takes one more); no $vars or ;.
+const SH_SUBS = new Set(["run", "build", "shell", "deploy", "scale", "destroy", "ls", "status", "metrics", "ips", "workers", "orgs", "users", "mesh",
+  "join", "init", "token", "dashboard", "create", "approve"]);
+const SH_GROUPS = new Set(["orgs", "users", "mesh"]);
+function shHighlight(text) {
+  const span = (cls, s) => (s ? `<span class="sh-${cls}">${esc(s)}</span>` : "");
+  // A word's pieces: quoted strings, <placeholders>, \-escaped characters, the rest plain (or `cls`).
+  const word = (w, cls = "") => {
+    let out = "", plain = "";
+    const flush = () => { out += cls ? span(cls, plain) : esc(plain); plain = ""; };
+    for (let i = 0; i < w.length;) {
+      const q = w[i] === "'" || w[i] === '"' ? w[i] : "";
+      const ph = !q && w[i] === "<" ? /^<[^<>\s]+>/.exec(w.slice(i)) : null;
+      if (q) {
+        let j = i + 1;
+        while (j < w.length && w[j] !== q) j += q === '"' && w[j] === "\\" ? 2 : 1;
+        flush(); out += span("str", w.slice(i, j + 1)); i = j + 1;
+      } else if (ph) { flush(); out += span("ph", ph[0]); i += ph[0].length; }
+      else if (w[i] === "\\") { plain += w.slice(i, i + 2); i += 2; }
+      else plain += w[i++];
+    }
+    flush();
+    return out;
+  };
+  return String(text ?? "").split("\n").map((line) => {
+    let out = "", rest = line, state = /^\s/.test(line) ? "arg" : "cmd", subs = 0, prev = "";
+    const prompt = /^\$ /.exec(rest);
+    if (prompt) { out += span("op", "$ "); rest = rest.slice(2); }
+    // Words keep their quotes whole (a quoted space doesn't split one); a \ escapes the next character.
+    for (const { 0: tok, index } of rest.matchAll(/\s+|(?:'[^']*'?|"(?:\\.|[^"\\])*"?|\\.?|[^\s'"\\])+/g)) {
+      if (/^\s/.test(tok)) out += esc(tok);
+      else if (tok === "\\") out += span("op", tok);
+      else if (tok.startsWith("#")) { out += span("com", rest.slice(index)); break; }
+      else if (state === "cmd" && /^[A-Z_][A-Z0-9_]*=/.test(tok) && prev === "env") out += word(tok);
+      else if (state === "cmd") { out += word(tok, "cmd"); state = tok === "sudo" || tok === "env" ? "cmd" : "sub"; prev = tok; }
+      else if (state === "sub" && SH_SUBS.has(tok) && (subs === 0 || SH_GROUPS.has(prev))) { out += span("sub", tok); subs++; prev = tok; }
+      else if (tok === "--") { out += span("op", tok); state = "arg"; }
+      else if (/^--?[A-Za-z]/.test(tok)) {
+        const eq = tok.indexOf("=");
+        out += eq < 0 ? span("flag", tok) : span("flag", tok.slice(0, eq)) + word(tok.slice(eq));
+        state = "arg";
+      } else { out += word(tok); state = "arg"; }
+    }
+    return out;
+  }).join("\n");
+}
+// `mirror.gcr.io/library/postgres@sha256:31ba…` → owner "", name "postgres", digest "31ba9c9": the registry host
+// and Docker's "library/" are noise on a card (the full ref is on hover).
+function imageParts(ref) {
+  const [repo, digest = ""] = ref.split("@sha256:");
+  const parts = repo.split("/");
+  if (parts.length > 1 && /[.:]|^localhost$/.test(parts[0])) parts.shift();
+  if (parts[0] === "library") parts.shift();
+  const name = parts.pop();
+  return { owner: parts.length ? parts.join("/") + "/" : "", name, digest: digest.slice(0, 7) };
+}
+const mem = (m) => (m >= 1024 ? `${+(m / 1024).toFixed(1)} GB` : `${m} MB`);
+// Where the edges serve an app, from `flyyy dashboard --apps-url` (`{app}` becomes the app's name).
+let appsUrl = "http://{app}.flyyy.localhost:8000/";
+// The flake the join dialog's command runs (/config.json: --flake-url).
+let flakeUrl = "git+https://github.com/koxu1996/flyyy?ref=main";
+// A node's name (wg::node_name_ok), and the one a node takes from its hostname without --name
+// (wg::default_node_name): lowercased, anything else a -, cut to 32, a leading digit prefixed with n.
+const NODE_NAME = /^[a-z][a-z0-9-]{0,31}$/;
+function defaultNodeName(host) {
+  const h = host.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 32);
+  return /^[0-9]/.test(h) ? `n${h.slice(0, 31)}` : h;
+}
+// The repo's page on GitHub, from the flake URL: git+ssh://git@github.com/<owner>/<repo>?ref=<branch>,
+// github:<owner>/<repo>[/<branch>] or https://github.com/<owner>/<repo> -> https://github.com/<owner>/<repo>
+// [/tree/<branch>]. "" when it isn't GitHub.
+function githubUrl(flake) {
+  let m = /^github:([\w.-]+)\/([\w.-]+)(?:\/([^?]+))?(?:\?(.*))?$/.exec(flake), owner, repo, ref, q;
+  if (m) [, owner, repo, ref, q] = m;
+  else {
+    m = /^(?:git\+)?(?:ssh:\/\/git@|https:\/\/)github\.com[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?(?:\?(.*))?$/.exec(flake);
+    if (!m) return "";
+    [, owner, repo, q] = m;
+  }
+  ref = new URLSearchParams(q ?? "").get("ref") ?? ref;
+  const base = `https://github.com/${owner}/${repo}`;
+  return ref ? `${base}/tree/${ref.split("/").map(encodeURIComponent).join("/")}` : base;
+}
+const appUrl = (name) => appsUrl.replaceAll("{app}", name);
+const appHost = (name) => { try { return new URL(appUrl(name)).host; } catch { return appUrl(name); } };
+// The app's http service (served by Host), if it has one.
+const httpOf = (a) => (a.services ?? []).find((v) => v.protocol === "http");
+// The app's dedicated address (ingress IPs): its tcp services are published there.
+const ipOf = (a) => (a.ips ?? []).find((i) => i.type === "dedicated")?.ip;
+// A tcp service's address: the app's own IP and its edge port (unset: the service's own port).
+const tcpAt = (a, v) => `${ipOf(a) ?? "edges"}:${v.edge_port ?? v.port}`;
+// Where an app is reached: its host, or for a tcp-only app its address(es).
+const where = (a) => (httpOf(a) ? appHost(a.name) : (a.services ?? []).map((v) => tcpAt(a, v)).join(", "));
+const bytes = (b) => (b >= 2 ** 30 ? `${+(b / 2 ** 30).toFixed(1)} GB` : b >= 2 ** 20 ? `${Math.round(b / 2 ** 20)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+// A stable colour per app name, so an app looks the same on its card, in the workers strip and after a reload.
+const PALETTE = ["#ff7a2f", "#3b82f6", "#22c55e", "#a855f7", "#ec4899", "#14b8a6", "#eab308", "#6366f1"];
+const slot = (name) => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % PALETTE.length;
+// Each app takes its name's slot, or the next free one if another app has it, so up to 8 apps never share a colour.
+// shortcut: an app's colour can change when another app with a clashing slot comes or goes.
+let colors = new Map();
+function assignColors(names) {
+  colors = new Map();
+  const taken = new Set();
+  for (const n of [...names].sort()) {
+    let i = slot(n);
+    for (let k = 0; k < PALETTE.length && taken.has(i); k++) i = (i + 1) % PALETTE.length;
+    taken.add(i);
+    colors.set(n, PALETTE[i]);
+  }
+}
+const color = (name) => colors.get(name) ?? PALETTE[slot(name)];
+const short = (id) => id.replace(/^(.*-[0-9a-f]{4})[0-9a-f]{2}$/, "$1");
+
+// "local": `flyyy dashboard` adds the CLI's token. "token" (the public dashboard): the page signs in with
+// the user's own token (operator or org user), kept for this tab only (sessionStorage), sent on every call.
+let auth = "local", token = "";
+try { token = sessionStorage.getItem("flyyy.token") || ""; } catch {}
+// No call before /config.json says which (the polls start with the page): one without a token would
+// count against this address's failed sign-ins.
+let configured;
+const ready = new Promise((r) => (configured = r));
+// Every API call goes through here (the dashboard forwards it to the control plane, same origin): with
+// the token when signed in, and signed out on a 401. The answer's status and JSON, for callers that read
+// the status themselves (the mesh's 409); `api` for the rest.
+async function request(method, path, body) {
+  await ready;
+  // Already showing: the refresh loop mustn't clear its error or take the focus back.
+  if (auth === "token" && !token) { if ($("#signin").hidden) showSignIn(); throw new Error("signed out"); }
+  const headers = { "content-type": "application/json" };
+  if (auth === "token") headers.authorization = `Bearer ${token}`;
+  const r = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const json = await r.json().catch(() => ({}));
+  if (r.status === 401 && auth === "token") { signOut("That token isn't valid (or its org is gone)."); throw new Error("signed out"); }
+  return { status: r.status, ok: r.ok, json };
+}
+async function api(method, path, body) {
+  const { ok, status, json } = await request(method, path, body);
+  if (!ok) throw new Error(json.error || `${status}`);
+  return json;
+}
+function showSignIn(why = "") {
+  $("#si-err").textContent = why;
+  $("#signin").hidden = false;
+  $("#si-token").focus();
+}
+function signOut(why = "") {
+  token = "";
+  try { sessionStorage.removeItem("flyyy.token"); } catch {}
+  apps = []; workers = null; mesh = null; me = null; orgs = null; users = null;
+  render();
+  showSignIn(why);
+}
+$("#signin-form").onsubmit = (e) => {
+  e.preventDefault();
+  const t = $("#si-token").value.trim();
+  if (!t) return;
+  token = t;
+  try { sessionStorage.setItem("flyyy.token", t); } catch {}
+  $("#si-token").value = "";
+  $("#signin").hidden = true;
+  refresh();
+};
+$("#sign-out").onclick = () => { closeWhoMenu(); signOut(); };
+for (const n of document.querySelectorAll(".si-help .blk")) n.innerHTML = shHighlight(n.textContent);
+
+function toast(msg, bad) {
+  const t = document.createElement("div");
+  t.className = "toast" + (bad ? " bad" : "");
+  t.textContent = msg;
+  $("#toasts").append(t);
+  setTimeout(() => t.remove(), bad ? 5000 : 2500);
+}
+
+/* ---------- polling ---------- */
+// The mesh answers 409 until `flyyy init`: that's "no mesh yet", not an error.
+async function getMesh() {
+  try {
+    const r = await request("GET", "/v1/mesh");
+    if (r.status === 409) return { none: true };
+    return r.ok ? r.json : { error: r.json.error || `${r.status}` };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+let timer;
+async function refresh() {
+  clearTimeout(timer);
+  try {
+    const list = await api("GET", "/v1/apps");
+    // Machines for every app that has (or is losing) some; destroyed + converged apps have none.
+    await Promise.all(list.map(async (a) => {
+      if (a.state === "active" || !a.converged) a.detail = await api("GET", `/v1/apps/${a.name}`).catch(() => null);
+    }));
+    me = await api("GET", "/v1/whoami").catch(() => me);
+    // The operator's views: an org user would get 403s, so they aren't asked (or shown).
+    if (me?.operator) {
+      workers = await api("GET", "/v1/workers").catch(() => null);
+      mesh = await getMesh();
+      [orgs, users] = await Promise.all([api("GET", "/v1/orgs"), api("GET", "/v1/users")]).catch(() => [orgs, users]);
+    } else {
+      workers = null; mesh = null; orgs = null; users = null;
+    }
+    apps = list;
+    for (const a of apps) if (pending[a.name] === a.count) delete pending[a.name];
+    render();
+    $("#problem").hidden = true;
+  } catch (err) {
+    // Signed out: the sign-in sheet says so.
+    $("#problem").textContent = `Can't reach the control plane: ${err.message}`;
+    $("#problem").hidden = err.message === "signed out";
+  }
+  const busy = apps.some((a) => !a.converged);
+  timer = setTimeout(refresh, document.hidden ? 5000 : busy ? 700 : 2000);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+
+/* ---------- navigation ---------- */
+const PAGES = ["apps", "nodes", "orgs"];
+// Pages only the operator gets; an org user's sidebar doesn't list them, and their links go to Apps.
+const OPERATOR_PAGES = ["nodes", "orgs"];
+let detailOf = "";  // the app shown on #app/<name>
+function showPage() {
+  let hash = decodeURIComponent(location.hash.slice(1));
+  if (hash === "mesh" || hash === "workers") hash = "nodes";
+  detailOf = hash.startsWith("app/") ? hash.slice(4) : "";
+  scaleOpen = "";
+  let page = detailOf ? "app" : PAGES.includes(hash) ? hash : "apps";
+  if (OPERATOR_PAGES.includes(page) && me && !me.operator) page = "apps";
+  for (const p of [...PAGES, "app"]) $(`#page-${p}`).hidden = p !== page;
+  for (const a of document.querySelectorAll(".side a.page")) a.classList.toggle("on", a.dataset.page === (page === "app" ? "apps" : page));
+  if (detailOf) { renderDetail(); window.scrollTo(0, 0); }
+}
+window.addEventListener("hashchange", showPage);
+showPage();
+try { document.body.classList.toggle("nav-collapsed", localStorage.getItem("flyyy.nav") === "collapsed"); } catch {}
+$("#nav-toggle").onclick = () => {
+  // Collapse to icons, remembered per browser (phones get a slim header instead, without this button).
+  const collapsed = document.body.classList.toggle("nav-collapsed");
+  $("#nav-toggle").setAttribute("aria-label", collapsed ? "Expand the sidebar" : "Collapse the sidebar");
+  try { localStorage.setItem("flyyy.nav", collapsed ? "collapsed" : "open"); } catch {}
+};
+
+
+
+/* ---------- app detail page ---------- */
+
+/* ---------- Scale panel (detail page) ---------- */
+// Nothing changes until Apply: the panel shows the new count, what it costs and warns at zero.
+const PRESETS = [0, 1, 2, 3, 5, 10];
+function scaleControl(a, count) {
+  return `<div class="more scale"><button class="btn plain scale-btn" data-act="scale-open" aria-expanded="${scaleOpen === a.name}">
+      <svg class="i"><use href="#i-layers"/></svg>Scale <b>${count}</b></button>
+    ${scaleOpen === a.name ? `<div class="pop" id="scale-pop">
+      <div class="t">VMs</div>
+      <div class="big"><output id="sp-n"></output>
+        <div class="stepper"><button data-act="scale-step" data-d="-1" id="sp-down" aria-label="One less">−</button><button data-act="scale-step" data-d="1" id="sp-up" aria-label="One more">+</button></div></div>
+      <input type="range" min="0" max="${MAX_COUNT}" id="sp-range" aria-label="VMs">
+      <div class="presets" id="sp-presets">${PRESETS.map((k) => `<button data-act="scale-to" data-n="${k}">${k}</button>`).join("")}</div>
+      <div class="imp" id="sp-imp"></div>
+      <div class="actions"><button class="btn plain" data-act="scale-cancel">Cancel</button><button class="btn primary" data-act="scale-apply" id="sp-apply">Apply</button></div>
+    </div>` : ""}
+  </div>`;
+}
+// Updates the open panel in place (rebuilding it would break a slider drag).
+function syncScale() {
+  const a = apps.find((x) => x.name === scaleOpen);
+  if (!a || !$("#scale-pop")) return;
+  const from = pending[a.name] ?? a.count, n = scaleDraft, d = n - from, sign = d > 0 ? "+" : "−";
+  $("#sp-n").textContent = n;
+  $("#sp-range").value = n;
+  $("#sp-down").disabled = n <= 0;
+  $("#sp-up").disabled = n >= MAX_COUNT;
+  for (const b of $("#sp-presets").children) b.classList.toggle("on", Number(b.dataset.n) === n);
+  $("#sp-imp").innerHTML = `${from} → <b>${n}</b> VM${n === 1 ? "" : "s"}${d ? ` · ${sign}${Math.abs(d) * a.cpus} vCPU · ${sign}${mem(Math.abs(d) * a.memory)}` : " · no change"}
+    <br>Total <b>${n * a.cpus} vCPU · ${mem(n * a.memory)}</b>
+    ${n === 0 ? `<div class="warn">At zero, ${esc(appHost(a.name))} stops answering.</div>` : ""}`;
+  $("#sp-apply").disabled = n === from;
+}
+function closeScale() {
+  if (!scaleOpen) return;
+  scaleOpen = "";
+  renderDetail(true);
+}
+$("#app-detail").addEventListener("input", (e) => {
+  if (e.target.id === "sp-range") { scaleDraft = Number(e.target.value); syncScale(); }
+});
+
+
+// The app page: the header, a live status strip, then tabs (Configuration, Traffic, Machines, Events).
+// The tab is kept across refreshes (per app); the strip and the open tab follow /load (2 s) and
+// /metrics (10 s).
+let detailTab = "config", detailTabApp = "";
+function renderDetail(force = false) {
+  if (!detailOf) return;
+  // While the Scale panel is open, refreshes leave the page alone (the panel keeps its own state).
+  if (scaleOpen && !force) return;
+  const a = apps.find((x) => x.name === detailOf);
+  if (!a) {
+    $("#app-detail").innerHTML = `<div class="empty"><div class="big">🔍</div><h2>There's no app called ${esc(detailOf)}</h2><p class="muted">It may have been destroyed. <a href="#apps">Back to apps</a></p></div>`;
+    return;
+  }
+  if (detailTabApp !== a.name) { detailTab = "config"; detailTabApp = a.name; }
+  const [kind, label] = status(a);
+  const live = a.state === "active";
+  const count = pending[a.name] ?? a.count;
+  const ms = detailMachines(a);
+  const host = appHost(a.name), url = appUrl(a.name);
+  const tabs = [["config", "Configuration"], ["traffic", "Traffic"], ["machines", `VMs (${ms.length})`], ["events", "Events"]];
+  $("#app-detail").innerHTML = `<div class="app detail" data-name="${esc(a.name)}">
+    <div class="detail-head">
+      <div>
+        <div class="row" style="gap:10px">
+          <span class="name"><span class="swatch"><i class="sw" style="background:${color(a.name)}"></i>${esc(a.name)}</span></span>
+          <span class="pill ${kind}">${label}</span>
+        </div>
+        ${live && !httpOf(a) ? `<span class="host"><svg class="i"><use href="#i-globe"/></svg>${esc(where(a))}</span>` : ""}
+        ${live && httpOf(a) ? (a.started ? `<a class="host" href="${esc(url)}" target="_blank" rel="noopener"><svg class="i"><use href="#i-globe"/></svg>${esc(host)} ↗</a>` : `<span class="host"><svg class="i"><use href="#i-globe"/></svg>${esc(host)}</span>`) : ""}
+      </div>
+      <div class="tools">
+        ${live ? `${scaleControl(a, count)}
+          <div class="more"><button class="icon-btn" data-act="menu" aria-label="More">⋯</button>
+            ${openMenu === a.name ? `<div class="menu"><button data-act="copy" data-url="${esc(url)}">Copy URL</button><hr><button class="bad" data-act="destroy">Destroy app…</button></div>` : ""}
+          </div>` : `<button class="btn plain" data-act="redeploy">Redeploy</button>`}
+      </div>
+    </div>
+    ${noEdge() ? NO_EDGE : ""}
+    <div class="stats strip" id="strip"></div>
+    ${errLine(ms)}
+    <div class="tabs" role="tablist">${tabs.map(([k, t]) => `<button role="tab" data-tab="${k}" aria-selected="${detailTab === k}" class="${detailTab === k ? "on" : ""}">${t}</button>`).join("")}</div>
+    <div id="tab-body"></div>
+  </div>`;
+  renderStrip();
+  renderTab();
+}
+// Its machines as the page lists them: by worker, then id.
+const detailMachines = (a) => [...(a.detail?.machines ?? [])].sort((x, y) => x.worker.localeCompare(y.worker) || x.id.localeCompare(y.id));
+const loadOf = (a) => (load.app === a.name ? load.data : null);
+const metricsOf = (a) => (metrics.app === a.name ? metrics.data : null);
+const WINDOW_TEXT = { "5m": "last 5 min", "1h": "last hour" };
+
+// The strip: machines, health, traffic now, latency and errors over the metrics window.
+function renderStrip() {
+  const el = $("#strip"), a = apps.find((x) => x.name === detailOf);
+  if (!el || !a) return;
+  const count = pending[a.name] ?? a.count, ld = loadOf(a), md = metricsOf(a), t = md?.totals;
+  const svc = httpOf(a) ?? a.services?.[0];
+  const passing = svc?.passing ?? 0, unhealthy = a.started > 0 && passing < a.started;
+  const what = !svc ? "no service" : svc.protocol === "tcp" ? "TCP connect passing" : `GET ${svc.check?.path || "/"} passing`;
+  const errors = t ? t["5xx"] + t.edge_502 + t.edge_503 : null;
+  const cell = (k, icon, v, sub, bad = false) => `<div class="stat${bad ? " bad" : ""}"><div class="k"><svg class="i"><use href="#${icon}"/></svg>${k}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`;
+  const win = WINDOW_TEXT[metrics.window];
+  el.innerHTML = [
+    cell("VMs", "i-layers", `${a.started}<small> / ${count}</small>`, "started"),
+    cell("Health", "i-plug", a.started ? `${passing}<small> / ${a.started}</small>` : "–", esc(what), unhealthy),
+    cell("Traffic", "i-globe", ld ? `${perSec(ld.rps)}<small> req/s</small>` : "–", ld ? `${ld.in_flight} in flight now` : "asking the edges…"),
+    cell("Latency p95", "i-spark", t?.p95_ms != null ? `${t.p95_ms}<small> ms</small>` : "–", t?.p50_ms != null ? `p50 ${t.p50_ms} ms · ${win}` : win),
+    cell("Errors", "i-term", errors ?? "–", `5xx and edge 502/503 · ${win}`, errors > 0),
+  ].join("");
+}
+
+function renderTab() {
+  const el = $("#tab-body"), a = apps.find((x) => x.name === detailOf);
+  if (!el || !a) return;
+  if (detailTab === "traffic") return renderTraffic(el);
+  if (detailTab === "machines") return renderMachinesTab(el, a);
+  // Polled whichever tab is open (pollEvents), so the tab opens on the latest.
+  if (detailTab === "events") { el.innerHTML = '<div id="events-panel"></div>'; return renderEvents(); }
+  renderConfig(el, a);
+}
+
+function renderConfig(el, a) {
+  const img = imageParts(a.image), digest = a.image.split("@")[1] ?? "", host = appHost(a.name);
+  const count = pending[a.name] ?? a.count;
+  const check = (v) => (v.protocol === "tcp" ? "accepts and holds a connection"
+    : v.check?.path ? `GET <code>${esc(v.check.path)}</code> wants 2xx/3xx` : "GET / answers below 500");
+  const limits = (v) => [v.soft_limit && `soft ${v.soft_limit}`, v.hard_limit && `hard ${v.hard_limit}`].filter(Boolean).join(", ");
+  el.innerHTML = `<dl class="kv">
+    <dt><svg class="i"><use href="#i-box"/></svg>Image</dt><dd><span class="owner muted">${esc(img.owner)}</span><b>${esc(img.name)}</b>
+      <div class="sub">${a.image_bytes ? `${bytes(a.image_bytes)} on each worker's disk · ` : ""}<code>${esc(digest)}</code></div></dd>
+    <dt><svg class="i"><use href="#i-cpu"/></svg>Size</dt><dd>${a.cpus} vCPU · ${mem(a.memory)} <span class="muted">each</span>
+      <div class="sub">${count * a.cpus} vCPU · ${mem(count * a.memory)} for ${count} VM${count === 1 ? "" : "s"}</div></dd>
+    <dt><svg class="i"><use href="#i-plug"/></svg>Services</dt><dd>${(a.services ?? []).map((v) => `<div class="svc2">
+        <div><b>${esc(v.name)}</b> <span class="badge">${v.protocol.toUpperCase()}</span> :${v.port} → ${v.protocol === "tcp" ? esc(tcpAt(a, v)) : esc(host)}</div>
+        <div class="sub">check ${check(v)} every ${v.check?.interval ?? 5} s${limits(v) ? `. Limits per instance and edge: ${limits(v)}` : ""}</div></div>`).join("")}</dd>
+    ${(a.ips ?? []).length ? `<dt><svg class="i"><use href="#i-globe"/></svg>IPs</dt><dd>${a.ips.map((i) => `<div><code>${esc(i.ip)}</code> <span class="muted">${i.type === "dedicated" ? "dedicated, for its TCP services" : "shared, HTTP by Host"}</span></div>`).join("")}</dd>` : ""}
+    <dt><svg class="i"><use href="#i-term"/></svg>Command</dt><dd>${a.cmd?.length ? `<code>${esc(shellJoin(a.cmd))}</code>` : '<span class="muted">image default</span>'}</dd>
+    <dt><svg class="i"><use href="#i-key"/></svg>Env</dt><dd>${a.env?.length ? `<code>${a.env.map(esc).join(", ")}</code> <span class="muted">(values hidden)</span>` : '<span class="muted">none</span>'}</dd>
+  </dl>`;
+}
+
+// One table: each machine, its worker (and the worker's arch, for the operator), state, its load now
+// (summed over its services' instances, from /load), CPU and memory now (from /metrics).
+function renderMachinesTab(el, a) {
+  const ms = detailMachines(a), ld = loadOf(a), md = metricsOf(a);
+  if (!ms.length) { el.innerHTML = '<div class="quiet">No VMs.</div>'; return; }
+  const stateText = (m) => (m.desired === "destroyed" ? "stopping" : m.state || "pending");
+  const sum = (id, k) => (ld ? ld.instances.filter((i) => i.machine === id).reduce((n, i) => n + (i[k] ?? 0), 0) : null);
+  const dash = '<span class="muted">–</span>';
+  el.innerHTML = `<div class="list"><div class="lrow mtrow head"><span>VM</span><span>Worker</span><span>State</span><span class="mt-if">In flight</span><span class="mt-rps">req/s</span>
+      <span class="mt-cpu">CPU</span><span class="mt-mem">Memory</span><span class="mt-logs"></span></div>
+    ${ms.map((m) => {
+      const w = (workers ?? []).find((w) => w.name === m.worker), u = md?.machines.find((x) => x.id === m.id);
+      const rps = sum(m.id, "rps");
+      return `<div class="lrow mtrow ${m.desired === "destroyed" ? "gone" : ""}">
+        <div class="mt-id"><span class="dot ${machineClass(m)}"></span><button class="linkbtn mono" data-logs="${esc(m.id)}" title="Its logs">${esc(m.id)}</button></div>
+        <div class="mt-w">${esc(m.worker)}${w?.arch ? `<div class="under">${esc(w.arch)}</div>` : ""}</div>
+        <div class="muted">${esc(stateText(m))}</div>
+        <div class="mt-if">${sum(m.id, "in_flight") ?? dash}</div>
+        <div class="mt-rps">${rps == null ? dash : perSec(Math.round(rps * 10) / 10)}</div>
+        <div class="mt-cpu">${u?.cpu_now != null ? `${Math.round(u.cpu_now * 100)}%` : dash}</div>
+        <div class="mt-mem">${u?.memory_now != null ? `${bytes(u.memory_now)} <span class="muted">/ ${mem(a.memory)}</span>` : dash}</div>
+        <div class="mt-logs"><button class="linkbtn" data-logs="${esc(m.id)}">Logs</button></div>
+        ${m.error && m.desired !== "destroyed" ? `<div class="mt-err">${esc(m.error)}</div>` : ""}
+      </div>`;
+    }).join("")}</div>`;
+}
+$("#app-detail").onclick = (e) => {
+  const lb = e.target.closest("[data-logs]");
+  if (lb) return openLogs(detailOf, lb.dataset.logs);
+  const tb = e.target.closest("[data-tab]");
+  if (tb) {
+    detailTab = tb.dataset.tab;
+    for (const b of document.querySelectorAll("[data-tab]")) { b.classList.toggle("on", b === tb); b.setAttribute("aria-selected", b === tb); }
+    renderTab();
+    return;
+  }
+  const w = e.target.closest("[data-mwin]");
+  if (w) {
+    metrics = { ...metrics, window: w.dataset.mwin, data: null, error: "" };
+    for (const b of document.querySelectorAll("[data-mwin]")) b.classList.toggle("on", b === w);
+    pollMetrics();
+    renderStrip();
+    return;
+  }
+  $("#apps").onclick(e);
+};
+
+/* ---------- events and logs (detail page) ---------- */
+// GET /v1/apps/<name>/events every 5 s while an app's page is open: the control plane's ring of its recent
+// events (deploys and scales, placements, image builds, machine states, checks, its workers' heartbeats).
+let events = { app: "", list: null, error: "" }, eventsTimer;
+async function pollEvents() {
+  clearTimeout(eventsTimer);
+  const app = detailOf;
+  if (app && !document.hidden) {
+    try { events = { app, list: (await api("GET", `/v1/apps/${app}/events`)).events, error: "" }; }
+    catch (e) { events = { app, list: null, error: e.message }; }
+    renderEvents();
+  }
+  eventsTimer = setTimeout(pollEvents, 5000);
+}
+const clock = (ms) => {
+  const d = new Date(ms);
+  const t = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
+  return d.toDateString() === new Date().toDateString() ? t : `${d.toLocaleDateString([], { month: "short", day: "numeric" })} ${t}`;
+};
+function renderEvents() {
+  const el = $("#events-panel");
+  if (!el) return;
+  if (events.app !== detailOf || (!events.list && !events.error)) { el.innerHTML = '<div class="quiet">Asking the control plane…</div>'; return; }
+  if (events.error) { el.innerHTML = `<div class="why">Can't get the events: ${esc(events.error)}</div>`; return; }
+  if (!events.list.length) { el.innerHTML = '<div class="quiet">No events since the control plane started.</div>'; return; }
+  el.innerHTML = `<div class="evlist">${events.list.map((v) => `<div class="evrow">
+      <span class="muted" title="${esc(new Date(v.at_ms).toLocaleString())}">${clock(v.at_ms)}</span>
+      <span class="mono em">${esc(v.machine) || '<span class="muted">app</span>'}</span>
+      <span class="${/failed|failing|down|silent/.test(v.text) ? "bad" : ""}">${esc(v.text)}</span></div>`).join("")}</div>`;
+}
+pollEvents();
+// A machine's console, from its worker's agent: the last lines of its unit's journal.
+let logsOf = null;
+async function openLogs(app, id) {
+  logsOf = { app, id };
+  $("#logs-title").textContent = `Logs for ${id}`;
+  $("#logs-sub").textContent = "Asking its worker…";
+  $("#logs-text").textContent = "";
+  $("#logs").hidden = false;
+  try {
+    const r = await api("GET", `/v1/apps/${app}/machines/${id}/logs`);
+    if (logsOf?.id !== id) return;
+    $("#logs-sub").textContent = `The last ${r.lines.length} line${r.lines.length === 1 ? "" : "s"} of its console, on ${r.worker}.`;
+    $("#logs-text").textContent = r.lines.join("\n") || "(nothing yet)";
+    const pre = $("#logs-text");
+    pre.scrollTop = pre.scrollHeight;
+  } catch (e) {
+    if (logsOf?.id === id) $("#logs-sub").textContent = `Can't get its logs: ${e.message}`;
+  }
+}
+const closeLogs = () => { $("#logs").hidden = true; logsOf = null; };
+$("#logs-close").onclick = closeLogs;
+$("#logs-refresh").onclick = () => logsOf && openLogs(logsOf.app, logsOf.id);
+$("#logs").onclick = (e) => { if (e.target.id === "logs") closeLogs(); };
+
+/* ---------- load (detail page) ---------- */
+// GET /v1/apps/<name>/load every 2 s while an app's page is open (the control plane asks every edge): per
+// instance its requests in flight, marked against its soft and hard limits, and req/s; the app's req/s
+// and errors (503s from the hard limit, failed upstreams).
+async function pollLoad() {
+  clearTimeout(loadTimer);
+  const app = detailOf;
+  if (app && !document.hidden) {
+    try { load = { app, data: await api("GET", `/v1/apps/${app}/load`), error: "" }; }
+    catch (e) { load = { app, data: null, error: e.message }; }
+    renderLoad();
+  }
+  loadTimer = setTimeout(pollLoad, 2000);
+}
+function limitChip(i) {
+  if (i.hard_limit && i.in_flight >= i.hard_limit) return '<span class="hchip critical">at hard limit</span>';
+  if (i.soft_limit && i.in_flight >= i.soft_limit) return '<span class="hchip warning">over soft limit</span>';
+  return i.soft_limit || i.hard_limit ? '<span class="hchip passing">under its limits</span>' : '<span class="hchip">no limits</span>';
+}
+const perSec = (v) => (v == null ? "–" : `${v}`);
+// The load feeds the strip's traffic and the Machines tab's in-flight and req/s.
+function renderLoad() {
+  renderStrip();
+  if (detailTab === "machines") renderTab();
+}
+pollLoad();
+
+/* ---------- metrics (detail page) ---------- */
+// GET /v1/apps/<name>/metrics every 10 s (a bucket) while an app's page is open: the control plane merges
+// every edge's traffic and the workers' CPU and memory. A node that didn't answer is named under the charts.
+async function pollMetrics() {
+  clearTimeout(metricsTimer);
+  const app = detailOf, win = metrics.window;
+  if (app && !document.hidden) {
+    try { metrics = { app, window: win, data: await api("GET", `/v1/apps/${app}/metrics?window=${win}`), error: "" }; }
+    catch (e) { metrics = { app, window: win, data: null, error: e.message }; }
+    renderMetrics();
+  }
+  metricsTimer = setTimeout(pollMetrics, 10000);
+}
+// A chart: `series` [{ name, color, values (null: no data), note (its legend's value) }], stacked columns
+// or lines, its y axis from 0 to the highest value with dashed gridlines at quarters, and a time axis
+// for the window `span_s` ("5 min ago … now").
+function chart(title, series, { stacked = false, fmt = (v) => `${v}`, span_s = 300 } = {}) {
+  const n = Math.max(0, ...series.map((s) => s.values.length));
+  const W = 300, H = 140, top = (stacked
+    ? Math.max(0, ...Array.from({ length: n }, (_, i) => series.reduce((a, s) => a + (s.values[i] ?? 0), 0)))
+    : Math.max(0, ...series.flatMap((s) => s.values.filter((v) => v != null)))) || 1;
+  const x = (i) => (n <= 1 ? 0 : (i / (n - 1)) * W), y = (v) => H - (v / top) * H;
+  let marks = [0.25, 0.5, 0.75, 1].map((f) => `<line class="grid" x1="0" x2="${W}" y1="${(H * (1 - f)).toFixed(1)}" y2="${(H * (1 - f)).toFixed(1)}"/>`).join("");
+  if (stacked) {
+    const bw = W / Math.max(n, 1);
+    for (let i = 0; i < n; i++) {
+      let base = 0;
+      for (const s of series) {
+        const v = s.values[i] ?? 0;
+        if (v > 0) marks += `<rect x="${(i * bw).toFixed(1)}" y="${y(base + v).toFixed(1)}" width="${Math.max(bw - 0.6, 0.6).toFixed(1)}" height="${((v / top) * H).toFixed(1)}" fill="${s.color}"/>`;
+        base += v;
+      }
+    }
+  } else {
+    for (const s of series) {
+      // Gaps (no data) break the line, so a missing bucket doesn't read as zero.
+      const runs = [];
+      s.values.forEach((v, i) => { if (v == null) runs.push([]); else { if (!runs.length) runs.push([]); runs[runs.length - 1].push(`${x(i).toFixed(1)},${y(v).toFixed(1)}`); } });
+      for (const r of runs.filter((r) => r.length)) marks += r.length === 1
+        ? `<circle cx="${r[0].split(",")[0]}" cy="${r[0].split(",")[1]}" r="1.6" fill="${s.color}"/>`
+        : `<polyline points="${r.join(" ")}" fill="none" stroke="${s.color}" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+    }
+  }
+  const ago = (sec) => (sec >= 3600 ? `${sec / 3600} hour${sec === 3600 ? "" : "s"} ago` : `${Math.round(sec / 60 * 10) / 10} min ago`);
+  return `<div class="chart"><h4><span>${esc(title)}</span><span class="muted">max ${esc(fmt(top))}</span></h4>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(title)}"><line class="axis" x1="0" y1="${H}" x2="${W}" y2="${H}"/>${marks}</svg>
+    <div class="taxis"><span>${ago(span_s)}</span><span>${ago(span_s / 2)}</span><span>now</span></div>
+    <div class="legend">${series.map((s) => `<span><i style="background:${s.color}"></i>${esc(s.name)}${s.note != null ? ` <b>${esc(s.note)}</b>` : ""}</span>`).join("")}</div></div>`;
+}
+// The Traffic tab: the window toggle, four charts, and one line of totals. Legends give the window's
+// totals: requests by status, the latency percentiles over all of it, CPU per machine on average, memory
+// per machine now.
+function renderTraffic(el) {
+  const toggle = `<div class="tab-tools"><span class="seg">${["5m", "1h"].map((w) => `<button data-mwin="${w}" class="${metrics.window === w ? "on" : ""}">${w === "5m" ? "5 min" : "1 hour"}</button>`).join("")}</span>
+    <span class="muted">10 s buckets</span></div>`;
+  if (!metrics.data && !metrics.error) { el.innerHTML = `${toggle}<div class="quiet">Asking the edges and workers…</div>`; return; }
+  if (metrics.error) { el.innerHTML = `${toggle}<div class="why">Can't get the metrics: ${esc(metrics.error)}</div>`; return; }
+  const d = metrics.data, t = d.totals, per = (vs) => vs.map((v) => Math.round((v / d.bucket_s) * 10) / 10);
+  const pct = (v) => `${Math.round(v * 100)}%`, b = (v) => (v ? bytes(v) : "0 B");
+  const short = (id) => (id.length > 14 ? id.slice(-8) : id);
+  const avg = (vs) => { const k = vs.filter((v) => v != null); return k.length ? k.reduce((x, y) => x + y, 0) / k.length : null; };
+  const ms = (v) => (v == null ? "–" : `${v} ms`), span_s = d.window_s;
+  const edge = [t.edge_502 && `the edges' own 502 ${t.edge_502}`, t.edge_503 && `503 ${t.edge_503}`].filter(Boolean).join(", ");
+  // No edge asked: no traffic, rather than empty request and latency charts (the VMs' CPU and memory stay).
+  const noEdges = d.asked?.edges === 0;
+  el.innerHTML = `${toggle}${noEdges ? `<div class="quiet">No edge is serving this app, so there's no traffic to show.</div>` : ""}<div class="charts big">
+      ${noEdges ? "" : `${chart("Requests/s by status", [["2xx", "var(--green)"], ["3xx", "#0a84ff"], ["4xx", "var(--amber)"], ["5xx", "var(--red)"]].map(([k, c]) => ({ name: k, color: c, values: per(d.requests[k]), note: t[k] })), { stacked: true, span_s })}
+      ${chart("Latency", [["p50", "#0a84ff"], ["p95", "var(--amber)"], ["p99", "var(--red)"]].map(([k, c]) => ({ name: k, color: c, values: d.latency_ms[k], note: ms(t[`${k}_ms`]) })), { fmt: (v) => `${v} ms`, span_s })}`}
+      ${chart("CPU per VM (average)", d.machines.map((m, i) => ({ name: short(m.id), color: PALETTE[i % PALETTE.length], values: m.cpu, note: avg(m.cpu) == null ? "–" : pct(avg(m.cpu)) })), { fmt: pct, span_s })}
+      ${chart(`Memory per VM (now, of ${mem(d.memory_mb)})`, d.machines.map((m, i) => ({ name: short(m.id), color: PALETTE[i % PALETTE.length], values: m.memory, note: m.memory_now == null ? "–" : bytes(m.memory_now) })), { fmt: (v) => bytes(v), span_s })}
+    </div>
+    ${noEdges ? "" : `<div class="tline">${t.requests} requests, ${b(t.bytes_in)} in, ${b(t.bytes_out)} out${edge ? `. <span class="bad">${edge}</span>` : ""}${d.missing.length
+      ? `. <span class="bad">Not counted, didn't answer: ${d.missing.map((g) => `${esc(g.kind)} ${esc(g.name)}`).join(", ")}</span>` : ""}</div>`}`;
+}
+function renderMetrics() {
+  const a = apps.find((x) => x.name === detailOf);
+  if (!a) return;
+  if (metrics.app !== detailOf) { metrics = { ...metrics, app: detailOf, data: null, error: "" }; pollMetrics(); }
+  renderStrip();
+  if (detailTab === "traffic" || detailTab === "machines") renderTab();
+}
+pollMetrics();
+
+/* ---------- nodes ---------- */
+// Pending joins first, as banners to approve; then two tables: the control plane and the edges (and a
+// dashboard's node), and the workers, with their capacity and heartbeat. A worker is matched to its mesh
+// node by its backhaul's mesh IP, else by name; without a mesh (`nix run` on one machine) the workers
+// alone are listed.
+function renderNodes() {
+  const m = mesh ?? {};
+  const meshOn = !!(m.nodes && !m.none && !m.error);
+  const ws = workers ?? [];
+  const matched = new Set();
+  const workerOf = (n) => {
+    const w = ws.find((w) => n.ip && (w.backhaul ?? "").split(":")[0] === n.ip) ?? ws.find((w) => w.name === n.name);
+    if (w) matched.add(w.name);
+    return w;
+  };
+  const nodes = meshOn ? m.nodes : [];
+  const pending = nodes.filter((n) => n.state === "pending").sort((x, y) => x.name.localeCompare(y.name));
+  const state = (n, w) => (n?.state === "approved" ? MESH_STATES.approved
+    : w ? (w.alive ? ["ok", "Running"] : ["bad", "No heartbeat"])
+    : MESH_STATES[n?.state] ?? ["off", n?.state ?? "unknown"]);
+  // The control plane (a card), then the edges and any dashboard's node (tables), then the workers.
+  const cp = meshOn ? { name: "control plane", role: "control", ip: m.control?.ip, host: m.control?.hostname, state: ["ok", "Running"] } : null;
+  const row = (n) => ({ name: n.name, role: n.role, ip: n.ip, host: n.state === "local" ? "the control host" : n.hostname, node: n, state: state(n) });
+  const others = (role) => nodes.filter((n) => n.state !== "pending" && n.role === role).sort((x, y) => x.name.localeCompare(y.name)).map(row);
+  const edges = others("edge"), dashes = others("dashboard");
+  const cps = cp ? [cp, ...edges, ...dashes] : [];
+  const wrows = nodes.filter((n) => n.state !== "pending" && n.role === "worker").map((n) => {
+    const w = workerOf(n);
+    return { name: n.name, ip: n.ip, host: n.hostname, node: n, w, state: state(n, w) };
+  });
+  for (const w of ws) if (!matched.has(w.name)) wrows.push({ name: w.name, ip: null, w, state: state(null, w) });
+  wrows.sort((x, y) => x.name.localeCompare(y.name));
+
+  const all = [...cps, ...wrows];
+  const healthy = all.filter((r) => r.state[0] === "ok").length;
+  $("#nav-nodes").textContent = pending.length ? `${pending.length} waiting` : all.length ? `${healthy}/${all.length}` : "";
+  $("#mesh-token").hidden = !meshOn;
+  const devMode = ws.some((w) => w.single_host);
+  $("#nodes-sub").innerHTML = (devMode ? `<span class="pill busy" title="Backhauls on loopback, no mesh: for one machine. Real deployments are mesh-only.">single-host (dev) mode</span> ` : "") + (meshOn
+    ? (m.unused_tokens > 0 ? `${m.unused_tokens} join command${m.unused_tokens === 1 ? "" : "s"} not used yet (expire in 24 h)` : "")
+    : m.none && devMode ? `One machine: control plane, workers and edges talk over loopback. For nodes on other machines, restart the control plane without <code>--single-host</code> and create the WireGuard mesh (real deployments are mesh-only).`
+    : m.none ? `No mesh yet. To add a node on another machine, <button class="linkbtn" id="mesh-init">create the WireGuard mesh</button> (needs CAP_NET_ADMIN where the control plane runs).`
+    : m.error ? `Mesh unavailable: ${esc(m.error)}` : "");
+
+  if (!all.length && !pending.length) {
+    // With a mesh, or none yet (+ Add node makes it); not when it can't be reached.
+    $("#nodes").innerHTML = `<div class="empty"><div class="big">🛰️</div>${meshOn || m.none
+      ? `<h2>Nothing to run apps on yet</h2><p class="muted">Add a worker: you get one command to paste on it.</p><button class="btn primary" id="add-node-empty">+ Add node</button>`
+      : `<h2>No nodes yet</h2><p class="muted">Workers show up here when they join.</p>`}</div>`;
+    return;
+  }
+  const meter = (used, total, fmt) => {
+    const pct = total ? used / total : 0;
+    const cls = pct > 1 ? "over" : pct >= 0.85 ? "warm" : "";
+    return `<div class="meter"><b>${fmt(used)}</b> / ${total ? fmt(total) : "?"}
+      <div class="bar"><i class="${cls}" style="width:${Math.min(100, pct * 100)}%"></i></div></div>`;
+  };
+  const ago = (s) => (s == null ? "never" : s < 120 ? `${s} s ago` : s < 7200 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`);
+  const dash = '<span class="muted">–</span>';
+  // Under a node's name: its host's name ("on nuc", from its join; none from before that, nor when the name
+  // is the one the hostname gives: no "nuc on nuc"), then the rest.
+  const onHost = (name, host) => (host && defaultNodeName(host) !== name ? `on ${esc(host)}` : "");
+  const under = (r, ...rest) => {
+    const parts = [onHost(r.name, r.host), ...rest].filter(Boolean);
+    return parts.length ? `<div class="under">${parts.join(", ")}</div>` : "";
+  };
+  const name = (r) => `<div class="nm"><span>${esc(r.name)}</span>${r.role && r.role !== "control" ? `<span class="role">${esc(r.role)}</span>` : ""}</div>`;
+  const pill = (r) => `<div><span class="pill ${r.state[0]}">${r.state[1]}</span></div>`;
+  // The endpoint the other nodes get: the advertised one if any (marked), else the learned one.
+  const endpoint = (n) => (n?.advertised_endpoint ? `${esc(n.advertised_endpoint)} <span class="muted">(advertised)</span>` : n?.endpoint ? esc(n.endpoint) : "");
+
+  const asks = pending.map((n) => {
+    const from = n.peer_endpoint || n.endpoint;
+    return `<div class="ask"><span class="dot pending"></span>
+      <div class="what"><b>${esc(n.name)}</b>${onHost(n.name, n.hostname) ? ` ${onHost(n.name, n.hostname)}` : ""} asks to join as <b>${esc(n.role || "a node")}</b>${from ? ` from <span class="mono">${esc(from)}</span>` : ""}${n.asked_age_s != null ? `, <span class="when">${ago(n.asked_age_s)}</span>` : ""}</div>
+      <button class="btn ${approving === n.name ? "primary" : "plain"}" data-approve="${esc(n.name)}">${approving === n.name ? "Confirm approve" : "Approve"}</button></div>`;
+  }).join("");
+  // The control plane's facts: the endpoint nodes dial (in every join token), its WireGuard peers (the
+  // nodes with an address, not the ones on its own host) with a handshake in the last 3 minutes, its API.
+  const peers = nodes.filter((n) => n.ip && n.state !== "pending" && n.state !== "local");
+  const connected = peers.filter((n) => n.handshake_age_s != null && n.handshake_age_s < 180).length;
+  const fact = (k, v, cls = "") => `<div class="fact ${cls}"><span class="k">${k}</span>${v}</div>`;
+  const cpCard = cp ? `<div class="ntab"><div class="section-title">Control plane</div><div class="cpcard">
+      <div class="fact cpname">${name(cp)}${under(cp)}</div>
+      ${fact("State", `<span class="pill ok">Running</span>`)}
+      ${fact("Mesh IP", `<span class="mono">${esc(cp.ip ?? "–")}</span>`)}
+      ${fact("Endpoint", m.control?.endpoint ? `<span class="mono">${esc(m.control.endpoint)}</span>` : dash)}
+      ${fact("Peers", peers.length ? `${connected} of ${peers.length} connected` : "none yet", peers.length && connected < peers.length ? "warnf" : "")}
+      ${fact("API", m.control?.api ? `<span class="mono">${esc(m.control.api)}</span>` : dash)}
+    </div></div>` : "";
+  // Edges (and, if any, dashboards' nodes): an edge on the control host has no endpoint or handshake of its own.
+  // No role tag by the name: the table says what they are. Edges have a Listen column: where each serves
+  // apps, as it announced it.
+  const nodeTable = (title, head, rows, listen = false) => `<div class="ntab"><div class="section-title">${title} (${rows.length})</div><div class="list">
+    <div class="lrow cprow ${listen ? "erow" : ""} head"><span>${head}</span><span>State</span><span class="mip">Mesh IP</span><span class="ep">Endpoint</span>${listen ? '<span class="lsn">Listen</span>' : ""}<span>Handshake</span></div>
+    ${rows.map((r) => `<div class="lrow cprow ${listen ? "erow" : ""} ${r.state[0] === "bad" ? "dead" : ""}">
+      <div>${name({ ...r, role: "" })}${under(r)}</div>
+      ${pill(r)}
+      <div class="mip mono">${esc(r.ip ?? "–")}</div>
+      <div class="ep mono">${endpoint(r.node) || dash}</div>
+      ${listen ? `<div class="lsn mono" title="${esc((r.node?.listen ?? []).map(listenText).join(", "))}">${esc((r.node?.listen ?? []).map(listenText).join(", ")) || dash}</div>` : ""}
+      <div class="seen muted">${r.node?.state === "local" ? "–" : ago(r.node?.handshake_age_s)}</div>
+    </div>`).join("")}</div></div>`;
+  const edgeTable = !cp ? "" : edges.length ? nodeTable("Edges", "Edge", edges, true)
+    : `<div class="ntab"><div class="section-title">Edges (0)</div><div class="nowork">No edge: apps aren't reachable from outside.<button type="button" class="linkbtn" id="add-edge-note">+ Add edge</button></div></div>`;
+  const cpTable = cpCard + edgeTable + (dashes.length ? nodeTable("Dashboards", "Dashboard", dashes) : "");
+  const wTable = wrows.length ? `<div class="ntab"><div class="section-title">Workers (${wrows.length})</div><div class="list">
+    <div class="lrow wrow head"><span>Worker</span><span>State</span><span class="cpu">vCPU</span><span class="memc">Memory</span>
+      <span class="img" title="EROFS images built on the worker (kept until image GC exists)">Images</span><span class="mip">Mesh IP</span><span class="hb">Heartbeat</span></div>
+    ${wrows.map((r) => {
+      const w = r.w;
+      const what = w ? `${esc(w.arch || "unknown arch")}, ${w.machines} VM${w.machines === 1 ? "" : "s"}${w.name !== r.name ? `, worker ${esc(w.name)}` : ""}` : "";
+      return `<div class="lrow wrow ${r.state[0] === "bad" ? "dead" : ""}">
+      <div>${name(r)}${under(r, what)}</div>
+      ${pill(r)}
+      <div class="cpu">${w ? meter(w.allocated_cpus, w.cpus, (n) => n) : dash}</div>
+      <div class="memc">${w ? meter(w.allocated_memory, w.memory, mem) : dash}</div>
+      <div class="img">${w ? `<b>${bytes(w.image_bytes ?? 0)}</b>` : dash}</div>
+      <div class="mip mono">${esc(r.ip ?? "–")}</div>
+      <div class="hb seen muted">${w ? ago(Math.round(w.heartbeat_age_ms / 1000)) : "–"}</div>
+    </div>`;
+    }).join("")}</div></div>`
+    // The control plane (and edges) but no worker yet: the section anyway, saying how to add one.
+    : cps.length ? `<div class="ntab"><div class="section-title">Workers (0)</div><div class="empty"><div class="big">🖥️</div>
+      <h2>No workers yet</h2><p class="muted">Apps run on workers: add one and paste its command on that machine.</p>
+      <button class="btn primary" id="add-worker-empty">+ Add worker</button></div></div>` : "";
+  $("#nodes").innerHTML = (asks ? `<div class="asks">${asks}</div>` : "") + cpTable + wTable;
+}
+// No edge in the mesh (none joined, approved or on the control host; a pending one doesn't count): nothing
+// routes to any app. Known only with a mesh, so only for the operator (an org user's page has none).
+const noEdge = () => !!(mesh?.nodes && !mesh.none && !mesh.error) && !mesh.nodes.some((n) => n.role === "edge" && n.state !== "pending");
+const NO_EDGE = `<div class="nowork">No edge: apps aren't reachable.<a href="#nodes" data-act="add-edge">Add an edge →</a></div>`;
+// An edge's listen address as the operator reads it (`flyyy mesh` says it the same way): [::] is IPv4 and
+// IPv6 on one socket on Linux.
+const listenText = (l) => (l.startsWith("[::]:") ? `${l} · IPv4 + IPv6` : l);
+const MESH_STATES = { pending: ["busy", "Waiting for approval"], approved: ["busy", "Approved, switching key"], joined: ["ok", "Joined"], local: ["ok", "On the control host"] };
+let approving = "";  // the node whose Approve was clicked once: the second click approves
+$("#page-nodes").addEventListener("click", async (e) => {
+  if (e.target.closest("#add-node-empty")) return addNode();
+  if (e.target.closest("#add-worker-empty")) return addNode("worker");
+  if (e.target.closest("#add-edge-note")) return addNode("edge");
+  if (e.target.closest("#mesh-init")) {
+    try { showToken(await api("POST", "/v1/mesh")); toast("Mesh created"); } catch (err) { toast(err.message, true); }
+    return refresh();
+  }
+  const b = e.target.closest("[data-approve]");
+  if (!b) return;
+  const name = b.dataset.approve;
+  // Two clicks: approving lets a machine into the cluster, and there's no revoke yet.
+  if (approving !== name) {
+    approving = name;
+    renderNodes();
+    setTimeout(() => { if (approving === name) { approving = ""; renderNodes(); } }, 4000);
+    return;
+  }
+  approving = "";
+  try { const r = await api("POST", `/v1/mesh/nodes/${encodeURIComponent(name)}/approve`); toast(`${name} approved: ${r.ip}`); }
+  catch (err) { toast(err.message, true); }
+  refresh();
+});
+$("#mesh-token").onclick = () => addNode();
+
+// The Add node dialog, in two steps like New app's: what kind of node (worker or edge), then a join token
+// and the one command that adds it (the flake's join app, or its edge app). The token carries the control plane's address. The name is optional (the
+// node's hostname otherwise) and only in the command when filled; an edge's other fields are remembered per
+// browser, its apps domain is the app links' (/config.json's apps_url). The command follows the fields.
+let tokenValue = "";
+const EDGE_FIELDS = { listen: "tk-listen", cert: "tk-cert", key: "tk-key" };
+// [::] is IPv4 and IPv6 on one socket on Linux (net.ipv6.bindv6only = 0, the default).
+const EDGE_DEFAULTS = { listen: "[::]:443", cert: "~/flyyy-tls/cert.pem", key: "~/flyyy-tls/key.pem" };
+// The default before [::]:443: a browser that saved it gets the new one.
+const OLD_LISTEN = "0.0.0.0:8443";
+let tkKind = "worker";
+const seenNames = () => [...(mesh?.nodes ?? []).map((n) => n.name), ...(workers ?? []).map((w) => w.name)];
+// https://{app}.flyyy.example.com/ -> flyyy.example.com.
+const appsDomain = () => /^[a-z]+:\/\/\{app\}\.([^/:]+)/.exec(appsUrl)?.[1] ?? "flyyy.localhost";
+// shellQuote, but a leading ~/ stays bare, so the node's shell expands it.
+const sh = (s) => (s.startsWith("~/") ? `~/${shellQuote(s.slice(2))}` : shellQuote(s));
+const field = (k) => $(`#${EDGE_FIELDS[k]}`).value.trim() || EDGE_DEFAULTS[k];
+function syncAddNode() {
+  const edge = tkKind === "edge";
+  $("#tk-edge").hidden = !edge;
+  // A node's name (wg::node_name_ok), and not one the cluster has: the control plane would refuse it.
+  const name = $("#tk-name").value.trim(), named = name ? [`--name ${sh(name)}`] : [];
+  $("#tk-name").classList.toggle("invalid", !!name && (!NODE_NAME.test(name) || seenNames().includes(name)));
+  const lines = edge
+    ? [`nix run '${flakeUrl}#edge' --`, ...named, `--listen ${sh(field("listen"))}`, `--apps-domain ${sh(appsDomain())}`,
+       `--tls-cert ${sh(field("cert"))}`, `--tls-key ${sh(field("key"))}`]
+    : [`nix run '${flakeUrl}#join' --`, ...named];
+  $("#tk-cmd").innerHTML = shHighlight([...lines, `'${tokenValue}'`].join(" \\\n  "));
+}
+// The kind step ("start"), or the form for tkKind ("form").
+function tkStep(step) {
+  const form = step === "form";
+  $("#tk-start").hidden = form;
+  $("#tk-form").hidden = !form;
+  $("#tk-back").hidden = !form;
+  $("#tk-next").hidden = form;
+  $("#tk-cancel").hidden = form;
+  $("#tk-done").hidden = !form;
+  $("#tk-title").textContent = !form ? "Add node" : tkKind === "edge" ? "Add edge" : "Add worker";
+  for (const c of document.querySelectorAll("#tk-start [data-kind]")) {
+    c.classList.toggle("on", c.dataset.kind === tkKind);
+    c.setAttribute("aria-pressed", c.dataset.kind === tkKind);
+  }
+  if (form) { syncAddNode(); $("#tk-name").focus(); } else $("#tk-start .choice.on")?.focus();
+}
+// kind: straight to that kind's form ("+ Add edge", the Apps checklist); none: the kind step first.
+function showToken(t, kind) {
+  tokenValue = t.token;
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem("flyyy.add-edge") || "{}") ?? {}; } catch {}
+  if (saved.listen === OLD_LISTEN) delete saved.listen;
+  for (const [k, id] of Object.entries(EDGE_FIELDS)) $(`#${id}`).value = typeof saved[k] === "string" ? saved[k] : EDGE_DEFAULTS[k];
+  $("#tk-name").value = "";
+  tkKind = kind ?? tkKind;
+  $("#token").hidden = false;
+  tkStep(kind ? "form" : "start");
+}
+// Click selects, double-click or Enter selects and goes on (as New app's choices).
+const tkPick = (e) => { const b = e.target.closest("[data-kind]"); if (b) { tkKind = b.dataset.kind; tkStep("start"); } return b; };
+$("#tk-start").addEventListener("click", tkPick);
+$("#tk-start").addEventListener("dblclick", (e) => { if (tkPick(e)) tkStep("form"); });
+$("#tk-start").addEventListener("keydown", (e) => { if (e.key === "Enter" && tkPick(e)) { e.preventDefault(); tkStep("form"); } });
+$("#tk-next").onclick = () => tkStep("form");
+$("#tk-back").onclick = () => tkStep("start");
+$("#tk-edge").addEventListener("input", () => {
+  const v = Object.fromEntries(Object.entries(EDGE_FIELDS).map(([k, id]) => [k, $(`#${id}`).value.trim()]));
+  try { localStorage.setItem("flyyy.add-edge", JSON.stringify(v)); } catch {}
+  syncAddNode();
+});
+$("#tk-name").addEventListener("input", syncAddNode);
+$("#tk-done").onclick = $("#tk-cancel").onclick = () => { $("#token").hidden = true; tokenValue = ""; $("#tk-cmd").textContent = ""; };
+// + Add node (the kind step), or a kind's form straight away: a token (the mesh first, when there's none yet: making it gives the first token).
+async function addNode(kind) {
+  try { showToken(await api("POST", mesh?.none ? "/v1/mesh" : "/v1/mesh/tokens"), kind); } catch (err) { toast(err.message, true); }
+  refresh();
+}
+// Copy buttons, in every dialog: the text of the element they name.
+document.addEventListener("click", async (e) => {
+  const c = e.target.closest("[data-copy]");
+  if (!c) return;
+  try { await navigator.clipboard.writeText($(`#${c.dataset.copy}`).textContent); toast("Copied"); }
+  catch { toast("Couldn't copy: the browser blocked the clipboard", true); }
+});
+
+/* ---------- who's signed in, and what the sidebar offers ---------- */
+function renderWho() {
+  const op = me?.operator === true;
+  for (const p of OPERATOR_PAGES) $(`.side a.page[data-page="${p}"]`).hidden = !op;
+  $("#who").hidden = !me;
+  if (!me) closeWhoMenu();
+  const name = op ? "operator" : me?.user ?? "";
+  $("#who-av").textContent = name.slice(0, 1);
+  $("#who-text").textContent = name;
+  $("#who-sub").textContent = op ? "operator" : me?.org ?? "";
+  $("#who").setAttribute("aria-label", op ? "Signed in as the operator" : me ? `Signed in as ${me.user}, org ${me.org}` : "");
+  $("#who-id").innerHTML = op ? "Signed in as <b>the operator</b>" : me ? `Signed in as <b>${esc(me.user)}</b>, org <b>${esc(me.org)}</b>` : "";
+  // An org user on an operator page (a link, or the operator signed out): Apps instead.
+  if (me && !op && OPERATOR_PAGES.includes(location.hash.slice(1))) location.hash = "#apps";
+}
+
+// The profile menu: above the sidebar's button, or below the phone header's avatar. Esc or a click
+// outside closes it.
+function placeWhoMenu() {
+  const r = $("#who").getBoundingClientRect(), m = $("#who-menu").style;
+  const phone = matchMedia("(max-width: 760px)").matches;
+  Object.assign(m, phone
+    ? { top: `${r.bottom + 6}px`, bottom: "auto", left: "auto", right: `${Math.max(16, innerWidth - r.right)}px` }
+    : { top: "auto", bottom: `${innerHeight - r.top + 6}px`, left: `${r.left}px`, right: "auto" });
+}
+function closeWhoMenu() {
+  $("#who-menu").hidden = true;
+  $("#who").setAttribute("aria-expanded", "false");
+}
+$("#who").onclick = () => {
+  if (!$("#who-menu").hidden) return closeWhoMenu();
+  placeWhoMenu();
+  $("#who-menu").hidden = false;
+  $("#who").setAttribute("aria-expanded", "true");
+};
+document.addEventListener("click", (e) => { if (!e.target.closest("#who, #who-menu")) closeWhoMenu(); });
+addEventListener("resize", () => { if (!$("#who-menu").hidden) placeWhoMenu(); });
+
+/* ---------- Orgs & users (the operator's) ---------- */
+// One row per org: its users and active apps; destroying one is typed-name confirmed, as for apps.
+// Each dialog shows the flyyy command that does the same, following the fields. Names follow the apps'
+// rule (NAME_RE, below), as the control plane checks them.
+function renderOrgs() {
+  const el = $("#orgs");
+  if (!orgs || !users) { el.innerHTML = ""; $("#nav-orgs").textContent = ""; $("#orgs-sub").textContent = ""; return; }
+  const active = orgs.filter((o) => o.state === "active");
+  $("#nav-orgs").textContent = active.length || "";
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  $("#orgs-sub").textContent = `${plural(active.length, "org")}, ${plural(users.length, "user")}`;
+  if (!orgs.length) {
+    el.innerHTML = `<div class="empty"><div class="big">🏢</div><h2>No orgs yet</h2>
+      <p class="muted">Orgs keep apps apart: each user sees only their own org's.</p><button class="btn primary" id="new-org-empty">+ New org</button></div>`;
+    return;
+  }
+  const sorted = [...orgs].sort((x, y) => (y.state === "active") - (x.state === "active") || x.name.localeCompare(y.name));
+  el.innerHTML = `<div class="list"><div class="lrow orow head"><span>Org</span><span>Users</span><span class="oapps">Apps</span><span></span></div>
+    ${sorted.map((o) => {
+      const us = users.filter((u) => u.org === o.name).sort((x, y) => x.name.localeCompare(y.name));
+      const live = o.state === "active";
+      return `<div class="lrow orow ${live ? "" : "gone"}">
+        <div class="oname">${esc(o.name)}</div>
+        <div class="uchips">${us.length ? us.map((u) => `<span class="uchip">${esc(u.name)}${u.role === "admin" ? "<small>admin</small>" : ""}</span>`).join("") : '<span class="muted">no users</span>'}</div>
+        <div class="oapps"><b>${o.apps}</b> app${o.apps === 1 ? "" : "s"}</div>
+        <div class="act">${live
+          ? `<button class="btn plain" data-org-destroy="${esc(o.name)}" ${o.apps ? `disabled title="Destroy its ${o.apps} app${o.apps === 1 ? "" : "s"} first"` : ""}>Destroy</button>`
+          : '<span class="pill off">Destroyed</span>'}</div>
+      </div>`;
+    }).join("")}</div>`;
+}
+let odKind = "";  // "org" or "user": what the dialog makes
+function openOd(kind) {
+  odKind = kind;
+  $("#od-title").textContent = kind === "org" ? "New org" : "New user";
+  $("#od-ask").hidden = false;
+  $("#od-done").hidden = true;
+  $("#od-token").textContent = "";
+  $("#od-org-wrap").hidden = kind !== "user";
+  const active = (orgs ?? []).filter((o) => o.state === "active").map((o) => o.name).sort();
+  $("#od-org").innerHTML = active.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  $("#od-name").value = "";
+  $("#od-go").hidden = false;
+  $("#od-go").disabled = false;
+  $("#od-cancel").textContent = "Cancel";
+  syncOd();
+  $("#od-err").textContent = kind === "user" && !active.length ? "Make an org first: a user belongs to one." : "";
+  $("#od").hidden = false;
+  $("#od-name").focus();
+}
+function syncOd() {
+  const name = $("#od-name").value.trim();
+  $("#od-name").classList.toggle("invalid", !!name && !NAME_RE.test(name));
+  const n = name ? shellQuote(name) : odKind === "org" ? "<org>" : "<user>";
+  $("#od-cli").innerHTML = shHighlight(odKind === "org" ? `flyyy orgs create ${n}` : `flyyy users create ${n} --org ${$("#od-org").value || "<org>"}`);
+  $("#od-err").textContent = "";
+}
+$("#od-name").oninput = syncOd;
+$("#od-org").onchange = syncOd;
+const closeOd = () => { $("#od").hidden = true; $("#od-token").textContent = ""; };
+$("#od-cancel").onclick = closeOd;
+$("#od").onclick = (e) => { if (e.target.id === "od") closeOd(); };
+$("#new-org").onclick = () => openOd("org");
+$("#new-user").onclick = () => openOd("user");
+$("#od-form").onsubmit = async (e) => {
+  e.preventDefault();
+  if ($("#od-ask").hidden) return closeOd();
+  const name = $("#od-name").value.trim();
+  if (!NAME_RE.test(name)) { $("#od-name").classList.add("invalid"); $("#od-err").textContent = "Name: a-z, 0-9 and -, starting with a letter and not ending with -, up to 20"; return; }
+  const org = $("#od-org").value;
+  if (odKind === "user" && !org) { $("#od-err").textContent = "Make an org first: a user belongs to one."; return; }
+  $("#od-go").disabled = true;
+  try {
+    if (odKind === "org") {
+      await api("POST", "/v1/orgs", { name });
+      closeOd();
+      toast(`Org ${name} created`);
+    } else {
+      const u = await api("POST", "/v1/users", { name, org });
+      // The token, once: only its hash is kept.
+      $("#od-token-label").textContent = `${u.name}'s token (org ${u.org})`;
+      $("#od-token").textContent = u.token;
+      $("#od-ask").hidden = true;
+      $("#od-done").hidden = false;
+      $("#od-go").hidden = true;
+      $("#od-cancel").textContent = "Done";
+    }
+    refresh();
+  } catch (err) {
+    $("#od-err").textContent = err.message;
+  } finally {
+    $("#od-go").disabled = false;
+  }
+};
+$("#page-orgs").addEventListener("click", (e) => {
+  if (e.target.closest("#new-org-empty")) return openOd("org");
+  const b = e.target.closest("[data-org-destroy]");
+  if (!b || b.disabled) return;
+  const o = (orgs ?? []).find((o) => o.name === b.dataset.orgDestroy);
+  if (!o) return;
+  const n = (users ?? []).filter((u) => u.org === o.name).length;
+  askDestroy({ name: o.name, path: `/v1/orgs/${o.name}`, done: `Org ${o.name} destroyed` },
+    `${n ? `Its ${n} user${n === 1 ? "" : "s"} lose${n === 1 ? "s" : ""} access for good: their tokens stop working.` : "It has no users."} This can't be undone.`,
+    `flyyy orgs destroy ${o.name}`);
+});
+
+/* ---------- render ---------- */
+// Services passing on fewer machines than are started: some get no traffic. (The API counts per service,
+// not per machine, so the page can't say which machines.)
+const failing = (a) => (a.services ?? []).filter((v) => (v.passing ?? 0) < a.started);
+function machineClass(m) {
+  if (m.desired === "destroyed") return "leaving";
+  if (m.state === "started") return "started";
+  if (m.state === "failed") return "failed";
+  return "pending";
+}
+
+function status(a) {
+  const ms = a.detail?.machines ?? [];
+  if (a.state === "destroyed") return a.converged ? ["off", "Destroyed"] : ["busy", "Destroying"];
+  if (ms.some((m) => m.state === "failed" && m.desired !== "destroyed")) return ["bad", "Failing"];
+  if (!a.converged) return ["busy", a.started < a.count ? "Starting" : "Scaling"];
+  if (a.count === 0) return ["off", "Scaled to zero"];
+  if (a.started && failing(a).length) return ["bad", `${failing(a).map((v) => `${v.name} ${v.passing ?? 0}/${a.started}`).join(", ")} passing`];
+  return ["ok", "Running"];
+}
+
+// The first failing machine's error, on the card itself rather than only in the collapsed table.
+function errLine(ms) {
+  const bad = ms.filter((m) => m.state === "failed" && m.desired !== "destroyed");
+  if (!bad.length) return "";
+  const m = bad[0], more = bad.length - 1;
+  return `<div class="errline"><b>${esc(short(m.id))}</b> on ${esc(m.worker)}: ${esc(m.error || "failed, no error reported")}${more ? ` <b>(+${more} more)</b>` : ""}</div>`;
+}
+
+function dot(m) {
+  const tip = [m.id, m.worker, m.desired === "destroyed" ? "destroying" : m.state || "pending", m.error].filter(Boolean).join(" · ");
+  return `<span class="dot ${machineClass(m)}" title="${esc(tip)}"></span>`;
+}
+
+// One row of the Apps list; everything else (scale, destroy, config, machines) is on its page.
+function appRow(a) {
+  const [kind, label] = status(a);
+  const ms = [...(a.detail?.machines ?? [])].sort((x, y) => x.worker.localeCompare(y.worker) || x.id.localeCompare(y.id));
+  const img = imageParts(a.image);
+  return `<a class="lrow ${a.state === "active" ? "" : "gone"}" href="#app/${encodeURIComponent(a.name)}">
+    <div><div class="nm"><i class="sw" style="background:${color(a.name)}"></i><span>${esc(a.name)}</span></div>
+      <div class="hs">${a.state === "active" ? esc(where(a)) : "destroyed"}</div></div>
+    <div><span class="pill ${kind}">${label}</span></div>
+    <div class="im" title="${esc(a.image)}">${esc(img.name)}<small>${a.cpus} vCPU · ${mem(a.memory)}${a.image_bytes ? ` · ${bytes(a.image_bytes)}` : ""}</small></div>
+    <div class="ds">${ms.map(dot).join("")}</div>
+    <div class="ct"><b>${a.started}</b> / ${a.count}</div>
+    <span class="ch">›</span>
+  </a>`;
+}
+const listHead = `<div class="lrow head"><span>App</span><span>Status</span><span class="im">Image</span><span class="ds">VMs</span><span class="ct">Started</span><span></span></div>`;
+const appList = (list) => `<div class="list">${listHead}${list.map(appRow).join("")}</div>`;
+
+function render() {
+  // Destroyed apps keep their colour until their last machine is gone (they still show in the workers strip).
+  assignColors(apps.filter((a) => a.state === "active" || !a.converged).map((a) => a.name));
+  const active = apps.filter((a) => a.state === "active");
+  $("#nav-apps").textContent = active.length || "";
+  // Destroyed apps fold away once their machines are gone; while destroying they stay in the main list.
+  const gone = apps.filter((a) => a.state !== "active" && a.converged);
+  const shown = apps.filter((a) => !gone.includes(a)).sort((x, y) => (y.state === "active") - (x.state === "active"));
+  $("#graveyard").hidden = !gone.length;
+  $("#graveyard-title").textContent = `Destroyed (${gone.length})`;
+  $("#gone").innerHTML = gone.length ? appList(gone) : "";
+  renderWho();
+  renderNodes();
+  renderOrgs();
+  renderDetail();
+  // The operator's view of the workers: none, or none alive, and nothing can start. (Org users don't see
+  // workers: workers is null for them.)
+  const noWorkers = me?.operator === true && Array.isArray(workers) && !workers.some((w) => w.alive);
+  $("#apps").innerHTML = shown.length
+    ? (noWorkers ? `<div class="nowork">No live workers: VMs can't start.<a href="#nodes" data-act="add-worker">Add a worker →</a></div>` : "") + (noEdge() ? NO_EDGE : "") + appList(shown)
+    : noWorkers || noEdge() ? notReady() : `
+    <div class="empty">
+      <div class="big">🪁</div>
+      <h2>${gone.length ? "Nothing running right now" : "Nothing running yet"}</h2>
+      <p class="muted">Start with whoami: it's up in about 10 seconds and tells you which VM answered.</p>
+      <button class="btn primary" data-act="new">+ New app</button>
+    </div>`;
+}
+
+// Apps, empty, and no live worker or no edge (the operator's only: org users have neither workers nor a
+// mesh, so noWorkers and noEdge() are false for them): both steps, each done (✓ its nodes), waiting for
+// approval (a link to Nodes), or its Add button (Add node at that kind's form). New app waits for both.
+function notReady() {
+  const nodes = mesh?.nodes ?? [];
+  const pending = (role) => nodes.filter((n) => n.role === role && n.state === "pending").map((n) => n.name);
+  const names = (l) => esc(l.slice(0, 2).join(", ")) + (l.length > 2 ? ` +${l.length - 2}` : "");
+  const step = (n, title, sub, done, doneNames, waiting, act, label) => `<li class="${done ? "done" : ""}">
+      <span class="num">${done ? "✓" : n}</span>
+      <div class="what"><b>${title}</b><small>${sub}</small></div>
+      <div class="how">${done ? `<span class="ok">✓ ${doneNames.length ? names(doneNames) : "ready"}</span>`
+        : waiting.length ? `<a href="#nodes">${names(waiting)}: waiting for approval →</a>`
+        : `<button class="btn plain" data-act="${act}">${label}</button>`}</div>
+    </li>`;
+  const live = (workers ?? []).filter((w) => w.alive).map((w) => w.name);
+  const edges = nodes.filter((n) => n.role === "edge" && n.state !== "pending").map((n) => n.name);
+  return `<div class="empty">
+      <div class="big">🧩</div>
+      <h2>Two things before your first app</h2>
+      <ol class="ready">
+        ${step(1, "A worker", "Runs the VMs.", live.length > 0, live, pending("worker"), "add-worker", "+ Add worker")}
+        ${step(2, "An edge", "Serves them to the internet.", !noEdge(), edges, pending("edge"), "add-edge", "+ Add edge")}
+      </ol>
+      <button class="btn primary" data-act="new" disabled>+ New app</button>
+      <p class="muted ready-note">New apps can start once both are here.</p>
+    </div>`;
+}
+
+/* ---------- actions ---------- */
+$("#gone").onclick = (e) => $("#apps").onclick(e);
+// A click anywhere outside the open ⋯ menu closes it.
+document.addEventListener("click", (e) => {
+  if (openMenu && !e.target.closest(".more")) { openMenu = ""; render(); }
+  if (scaleOpen && !e.target.closest(".scale")) closeScale();
+});
+$("#apps").onclick = async (e) => {
+  const btn = e.target.closest("[data-act]");
+  if (!btn) return;
+  const name = btn.closest(".app")?.dataset.name;
+  const a = apps.find((x) => x.name === name);
+  switch (btn.dataset.act) {
+    case "new": return openDeploy();
+    case "add-worker": location.hash = "#nodes"; return addNode("worker");
+    case "add-edge": location.hash = "#nodes"; return addNode("edge");
+    case "redeploy": return openDeploy(a);
+    case "scale-open":
+      if (scaleOpen === name) return closeScale();
+      scaleOpen = name;
+      scaleDraft = pending[name] ?? a.count;
+      renderDetail(true);
+      return syncScale();
+    case "scale-step":
+      scaleDraft = Math.max(0, Math.min(MAX_COUNT, scaleDraft + Number(btn.dataset.d)));
+      return syncScale();
+    case "scale-to":
+      scaleDraft = Number(btn.dataset.n);
+      return syncScale();
+    case "scale-cancel":
+      return closeScale();
+    case "scale-apply": {
+      const n = scaleDraft;
+      scaleOpen = "";
+      pending[name] = n;
+      render();
+      try { await api("PATCH", `/v1/apps/${name}`, { count: n }); toast(`Scaling ${name} to ${n} VM${n === 1 ? "" : "s"}`); }
+      catch (err) { delete pending[name]; toast(err.message, true); }
+      return refresh();
+    }
+    case "menu":
+      openMenu = openMenu === name ? "" : name;
+      return render();
+    case "copy":
+      openMenu = "";
+      render();
+      try { await navigator.clipboard.writeText(btn.dataset.url); toast("URL copied"); }
+      catch { toast("Couldn't copy: the browser blocked the clipboard", true); }
+      return;
+    case "destroy":
+      openMenu = "";
+      render();
+      return openConfirm(a);
+  }
+};
+
+/* ---------- deploy sheet ---------- */
+const f = {
+  name: $("#f-name"), image: $("#f-image"), port: $("#f-port"), cmd: $("#f-cmd"), env: $("#f-env"),
+  count: $("#f-count"), cpus: $("#f-cpus"), memory: $("#f-memory"), proto: $("#f-proto"), check: $("#f-check"), ext: $("#f-ext"),
+};
+// A tcp service's default edge port: its own port (postgres on 5432); 80 and 443 are the edges' own.
+const defaultExt = (port) => ([80, 443].includes(port) ? 8000 + port : port);
+const CHECK_RE = /^\/[\x21-\x7e]{0,255}$/;
+const NAME_RE = /^[a-z](?:[a-z0-9-]{0,18}[a-z0-9])?$/;
+const IMAGE_RE = /^[a-z0-9][a-z0-9._/-]*@sha256:[0-9a-f]{64}$/;
+const ENV_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+// The API's limits (agent.rs cmd_ok/env_ok): the argv and env travel in the guest's config.json.
+const MAX_ARGS = 64, MAX_ARG_BYTES = 4096, MAX_ENV = 64;
+
+// The Command field, split as a POSIX shell would split a line (no expansion): '…' literal, "…" with \" \\
+// escapes, \x outside quotes. The result is the exact argv, like `flyyy deploy … -- <args>`.
+function shellSplit(line) {
+  const args = [];
+  let cur = null, i = 0;
+  const push = (c) => { cur = (cur ?? "") + c; };
+  while (i < line.length) {
+    const c = line[i++];
+    if (c === "'") {
+      const end = line.indexOf("'", i);
+      if (end < 0) throw new Error("unclosed '");
+      push(line.slice(i, end)); i = end + 1;
+    } else if (c === '"') {
+      let closed = false;
+      while (i < line.length) {
+        const d = line[i++];
+        if (d === '"') { closed = true; break; }
+        if (d === "\\" && i < line.length && '"\\$`'.includes(line[i])) push(line[i++]);
+        else push(d);
+      }
+      if (!closed) throw new Error('unclosed "');
+      cur ??= "";
+    } else if (c === "\\") {
+      if (i < line.length) push(line[i++]);
+    } else if (/\s/.test(c)) {
+      if (cur !== null) { args.push(cur); cur = null; }
+    } else push(c);
+  }
+  if (cur !== null) args.push(cur);
+  return args;
+}
+// One arg as a shell would need it typed: bare when safe, else single-quoted.
+const shellQuote = (a) => (/^[A-Za-z0-9_\-+=.,:\/@%{}^]+$/.test(a) ? a : `'${a.replace(/'/g, `'\\''`)}'`);
+const shellJoin = (argv) => argv.map(shellQuote).join(" ");
+
+function parseEnv(text) {
+  const env = {};
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const at = line.indexOf("=");
+    if (at < 1) throw new Error(`"${line}": want KEY=value`);
+    const k = line.slice(0, at);
+    if (!ENV_NAME_RE.test(k)) throw new Error(`"${k}": names are letters, digits and _, not starting with a digit`);
+    env[k] = line.slice(at + 1);
+  }
+  return env;
+}
+
+function segValue(el) { return Number(el.dataset.value); }
+function setSeg(el, v) {
+  el.dataset.value = v;
+  // As text: some choices are numbers (cpus, memory), some aren't (the join token's role).
+  for (const b of el.children) b.classList.toggle("on", String(b.dataset.v ?? b.textContent) === String(v));
+}
+for (const el of [f.cpus, f.memory, f.proto]) {
+  el.onclick = (e) => { const b = e.target.closest("button"); if (b) { setSeg(el, b.dataset.v ?? b.textContent); syncCli(); } };
+}
+$("#deploy-form .stepper").onclick = (e) => {
+  const b = e.target.closest("[data-step]");
+  if (!b) return;
+  f.count.value = Math.max(1, Math.min(MAX_COUNT, Number(f.count.value) + Number(b.dataset.step)));
+  syncCli();
+};
+
+function spec() {
+  return {
+    name: f.name.value.trim(), image: f.image.value.trim(), port: Number(f.port.value),
+    count: Number(f.count.value), cpus: segValue(f.cpus), memory: segValue(f.memory), cmd: f.cmd.value, env: f.env.value,
+    proto: f.proto.dataset.value, check: f.check.value.trim(), ext: Number(f.ext.value),
+  };
+}
+
+// The app's one service (services.rs): http by Host with an optional GET check, or tcp on an edge port.
+function service(s) {
+  return s.proto === "tcp"
+    ? { name: "tcp", protocol: "tcp", port: s.port, edge_port: s.ext }
+    : { name: "http", protocol: "http", port: s.port, ...(s.check ? { check: { path: s.check } } : {}) };
+}
+
+// The spec as the API wants it (cmd: argv, env: object); throws with a message for the form.
+function body(s) {
+  let cmd, env;
+  try { cmd = shellSplit(s.cmd); } catch (e) { throw Object.assign(new Error(`Command: ${e.message}`), { field: "cmd" }); }
+  if (cmd.length > MAX_ARGS || cmd.some((a) => new TextEncoder().encode(a).length > MAX_ARG_BYTES)) {
+    throw Object.assign(new Error(`Command: at most ${MAX_ARGS} args of ${MAX_ARG_BYTES} bytes`), { field: "cmd" });
+  }
+  try { env = parseEnv(s.env); } catch (e) { throw Object.assign(new Error(`Environment: ${e.message}`), { field: "env" }); }
+  if (Object.keys(env).length > MAX_ENV) throw Object.assign(new Error(`Environment: at most ${MAX_ENV} variables`), { field: "env" });
+  return { image: s.image, services: [service(s)], count: s.count, cpus: s.cpus, memory: s.memory, cmd, env };
+}
+
+function problems(s) {
+  const p = {};
+  if (!NAME_RE.test(s.name)) p.name = "Name: a lowercase letter, then up to 19 of a-z, 0-9 or -";
+  if (!IMAGE_RE.test(s.image)) p.image = "Image: <repo>@sha256:<64 hex>, no tags";
+  if (!(s.port >= 1 && s.port <= 65535 && Number.isInteger(s.port))) p.port = "Port: 1-65535";
+  if (s.proto === "tcp" && !(s.ext >= 1 && s.ext <= 65535 && Number.isInteger(s.ext) && ![80, 443].includes(s.ext))) p.ext = "Edge port: 1-65535, not 80 or 443";
+  if (s.proto === "http" && s.check && !CHECK_RE.test(s.check)) p.check = "Health check: a path like /healthz, no spaces";
+  try { body(s); } catch (e) { p[e.field] = e.message; }
+  return p;
+}
+
+function syncCli() {
+  const s = spec();
+  const svc = s.proto === "tcp" ? ` --service tcp=tcp:${s.port || "<n>"}@${s.ext || "<edge port>"}`
+    : s.check ? ` --service ${shellQuote(`http=http:${s.port || "<n>"},path=${s.check}`)}` : ` --port ${s.port || "<n>"}`;
+  let cli = `flyyy deploy ${s.name || "<app>"} --image ${s.image || "<image>"}${svc} --count ${s.count}`;
+  $("#f-check-wrap").hidden = s.proto === "tcp";
+  $("#f-ext-wrap").hidden = s.proto !== "tcp";
+  $("#f-name-hint").textContent = s.proto === "tcp" ? `served on its own IP, port ${s.ext || "…"}` : `becomes ${appHost("<name>")}`;
+  if (s.cpus !== 1) cli += ` --cpus ${s.cpus}`;
+  if (s.memory !== 128) cli += ` --memory ${s.memory}`;
+  let b = null;
+  try { b = body(s); } catch {}
+  if (b) for (const [k, v] of Object.entries(b.env)) cli += ` --env ${shellQuote(`${k}=${v}`)}`;
+  if (b?.cmd.length) cli += ` -- ${shellJoin(b.cmd)}`;
+  // The prompt is outside the command: not selectable.
+  $("#f-cli").innerHTML = `<span class="sh-op sh-prompt">$ </span>${shHighlight(cli)}`;
+  for (const k of ["name", "image", "port", "cmd", "env", "check", "ext"]) f[k].classList.remove("invalid");
+  $("#deploy-err").textContent = "";
+}
+for (const k of ["name", "image", "port", "cmd", "env", "check", "ext"]) f[k].oninput = syncCli;
+// A tcp app's edge port follows its port until the operator sets one.
+f.port.addEventListener("input", () => { if (!f.ext.dataset.touched) f.ext.value = defaultExt(Number(f.port.value) || 0); });
+f.ext.addEventListener("input", () => { f.ext.dataset.touched = "1"; });
+
+// Example apps for the "New app" sheet, grouped: templates.json (served by `flyyy dashboard`, embedded in it).
+let GROUPS = [], TEMPLATES = [];
+let group = "demos";
+try { group = localStorage.getItem("flyyy.group") || group; } catch {}
+let picked = "";
+
+function renderTemplates() {
+  $("#f-groups").innerHTML = GROUPS.map((g) =>
+    `<button type="button" data-g="${g.id}" class="${g.id === group ? "on" : ""}">${esc(g.name)}<span class="n">${g.items.length}</span></button>`).join("");
+  const items = GROUPS.find((g) => g.id === group).items;
+  $("#f-templates").innerHTML = items.map((t) => `
+    <button type="button" class="tpl${t.name === chosen ? " on" : ""}${t.broken ? " broken" : ""}" data-i="${TEMPLATES.indexOf(t)}"
+        title="${esc(t.broken ? `Won't start: ${t.broken}` : t.desc)}&#10;${esc(t.image)}">
+      <span class="em">${t.icon}</span>
+      <span class="t"><b>${esc(t.name)}${t.tested ? '<span class="ok" title="We ran it on flyyy">✓</span>' : ""}${t.tcp ? '<span class="badge" title="Not HTTP: served on an edge port (raw TCP)">TCP</span>' : ""}</b><small${t.broken ? ' class="bad"' : ""}>${t.broken ? "Won't start" : esc(t.desc)}</small></span>
+    </button>`).join("");
+}
+$("#f-groups").onclick = (e) => {
+  const b = e.target.closest("[data-g]");
+  if (!b) return;
+  group = b.dataset.g;
+  try { localStorage.setItem("flyyy.group", group); } catch {}
+  renderTemplates();
+  $("#f-templates").scrollTop = 0;
+};
+// The first two steps select (a click: the accent border) and Continue goes on; a double-click or Enter on
+// a card goes straight on. Back keeps the selection.
+let startPick = "template", chosen = "";
+function syncNext() {
+  for (const c of document.querySelectorAll("#step-start [data-start]")) {
+    c.classList.toggle("on", c.dataset.start === startPick);
+    c.setAttribute("aria-pressed", c.dataset.start === startPick);
+  }
+  for (const c of document.querySelectorAll("#f-templates [data-i]")) {
+    const on = TEMPLATES[c.dataset.i]?.name === chosen;
+    c.classList.toggle("on", on);
+    c.setAttribute("aria-pressed", on);
+  }
+  $("#deploy-next").disabled = step === "template" && !TEMPLATES.some((t) => t.name === chosen);
+}
+function goOn() {
+  if (step === "start") return startPick === "template" ? showStep("template") : startImage();
+  const t = step === "template" && TEMPLATES.find((x) => x.name === chosen);
+  if (t) applyTemplate(t);
+}
+$("#deploy-next").onclick = goOn;
+// Click selects, double-click or Enter selects and goes on.
+function selectable(el, sel, pick) {
+  el.addEventListener("click", (e) => { const b = e.target.closest(sel); if (b) { pick(b); syncNext(); } });
+  el.addEventListener("dblclick", (e) => { if (e.target.closest(sel)) goOn(); });
+  el.addEventListener("keydown", (e) => {
+    const b = e.key === "Enter" && e.target.closest(sel);
+    if (!b) return;
+    e.preventDefault();
+    pick(b);
+    syncNext();
+    goOn();
+  });
+}
+selectable($("#step-start"), "[data-start]", (b) => { startPick = b.dataset.start; });
+selectable($("#f-templates"), "[data-i]", (b) => { chosen = TEMPLATES[b.dataset.i].name; });
+function applyTemplate(t) {
+  // Keep a name the operator typed; replace an empty one or one a template filled in.
+  if (!f.name.value || TEMPLATES.some((x) => x.name === f.name.value)) f.name.value = t.name;
+  f.image.value = t.image;
+  f.port.value = t.port;
+  setSeg(f.proto, t.tcp ? "tcp" : "http");
+  f.check.value = "";
+  f.ext.value = defaultExt(t.port);
+  delete f.ext.dataset.touched;
+  f.cmd.value = shellJoin(t.cmd ?? []);
+  f.env.value = Object.entries(t.env ?? {}).map(([k, v]) => `${k}=${v}`).join("\n");
+  setSeg(f.cpus, t.cpus ?? 1);
+  setSeg(f.memory, t.memory ?? 128);
+  picked = t.name;
+  $("#f-picked").innerHTML = `<span class="em">${t.icon}</span>
+    <span class="t"><b>${esc(t.name)}</b><small title="${esc(t.image)}">${esc(t.image)}</small>
+      ${t.tested ? `<span class="verdict ok">✓ Tested on flyyy at ${t.cpus} vCPU · ${mem(t.memory)}</span>` : ""}
+      ${t.broken ? `<span class="verdict bad">Known not to start: ${esc(t.broken)}</span>` : ""}</span>
+    <button type="button" class="btn plain" data-change>Change</button>`;
+  showStep("config");
+}
+$("#f-picked").onclick = (e) => { if (e.target.closest("[data-change]")) showStep("template"); };
+async function loadTemplates() {
+  try { GROUPS = await (await fetch("/templates.json")).json(); } catch { GROUPS = []; }
+  TEMPLATES = GROUPS.flatMap((g) => g.items);
+  if (GROUPS.length && !GROUPS.some((g) => g.id === group)) group = GROUPS[0].id;
+  if (GROUPS.length) renderTemplates();
+  $("#tpl-note").textContent = `✓ means we ran it on flyyy (${TEMPLATES.filter((t) => t.tested).length} of ${TEMPLATES.length}).`;
+  $("#choice-template-sub").textContent = `${TEMPLATES.length} ready-made apps in ${GROUPS.length} groups: databases, web servers, observability…`;
+}
+loadTemplates();
+
+/* ---------- the New app steps: start → (template) → config ---------- */
+let step = "start", source = "image";  // source: template | image | redeploy
+function showStep(next) {
+  step = next;
+  if (next === "template") source = "template";
+  for (const k of ["start", "template", "config"]) $(`#step-${k}`).hidden = k !== next;
+  $("#deploy-back").hidden = next === "start" || source === "redeploy";
+  $("#deploy-go").hidden = next !== "config";
+  $("#deploy-next").hidden = next === "config";
+  syncNext();
+  const titles = { start: "New app", template: "Choose a template", config: source === "redeploy" ? `Redeploy ${f.name.value}` : "Configure" };
+  $("#deploy-title").textContent = titles[next];
+  if (next === "start") $("#step-start .choice.on")?.focus();
+  if (next === "template") ($("#f-templates .tpl.on") ?? $("#f-templates .tpl"))?.focus();
+  if (next !== "config") return;
+  // From a template the image is fixed (shown in the summary; Change goes back); your own image needs typing.
+  $("#f-picked").hidden = source !== "template";
+  $("#f-image-wrap").hidden = source === "template";
+  const adv = [f.cmd.value && "command", f.env.value && "environment"].filter(Boolean);
+  $("#f-adv-title").innerHTML = `Command and environment${adv.length ? `<span class="n">(${adv.join(" and ")} set)</span>` : ""}`;
+  $("#f-adv").open = source === "redeploy" ? !!f.env.value : false;
+  syncCli();
+  const first = source === "image" ? f.image : source === "redeploy" ? (f.env.value ? f.env : f.image) : f.name;
+  first.focus();
+  // An image ref is long: show its start (the repo), not the digest at its end where the caret lands.
+  if (first === f.image) { f.image.setSelectionRange(0, 0); f.image.scrollLeft = 0; }
+}
+f.image.addEventListener("blur", () => { f.image.scrollLeft = 0; });
+// Your own image: the fields cleared of a template's.
+function startImage() {
+  source = "image";
+  picked = chosen = "";
+  renderTemplates();
+  if (TEMPLATES.some((x) => x.name === f.name.value)) f.name.value = "";
+  f.image.value = ""; f.port.value = 80; f.cmd.value = ""; f.env.value = "";
+  setSeg(f.cpus, 1); setSeg(f.memory, 128);
+  showStep("config");
+}
+$("#deploy-back").onclick = () => showStep(step === "config" && source === "template" ? "template" : "start");
+
+function openDeploy(a) {
+  source = a ? "redeploy" : "image";
+  picked = chosen = "";
+  startPick = "template";
+  renderTemplates();
+  f.name.value = a?.name ?? "";
+  f.name.disabled = !!a;
+  f.image.value = a?.image ?? "";
+  // The wizard deploys one service; a redeploy starts from the app's first one.
+  const v = a?.services?.[0];
+  f.port.value = v?.port ?? a?.port ?? 80;
+  setSeg(f.proto, v?.protocol ?? "http");
+  f.check.value = v?.check?.path ?? "";
+  f.ext.value = v?.edge_port ?? defaultExt(Number(f.port.value));
+  delete f.ext.dataset.touched;
+  f.cmd.value = shellJoin(a?.cmd ?? []);
+  // The API returns env names only (values may be secrets), so a redeploy asks for them again.
+  f.env.value = (a?.env ?? []).map((k) => `${k}=`).join("\n");
+  $("#f-env-hint").textContent = a?.env?.length ? "the values aren't shown again: fill them in" : "optional, one per line";
+  f.count.value = Math.max(1, a?.count || 1);
+  setSeg(f.cpus, a?.cpus ?? 1);
+  setSeg(f.memory, a?.memory ?? 128);
+  $("#deploy").hidden = false;
+  showStep(a ? "config" : "start");
+}
+function closeDeploy() { $("#deploy").hidden = true; }
+$("#new-app").onclick = () => openDeploy();
+$("#deploy-cancel").onclick = closeDeploy;
+$("#deploy").onclick = (e) => { if (e.target.id === "deploy") closeDeploy(); };
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  closeDeploy();
+  closeConfirm();
+  closeLogs();
+  $("#token").hidden = true;
+  if (!$("#who-menu").hidden) { closeWhoMenu(); $("#who").focus(); }
+  if (openMenu) { openMenu = ""; render(); }
+  closeScale();
+});
+
+/* ---------- destroy: type the app's name to confirm ---------- */
+// An app, or (Orgs & users) an org: { name, path to DELETE, the toast after }.
+let confirming = null;
+function openConfirm(a) {
+  askDestroy({ name: a.name, path: `/v1/apps/${a.name}`, done: `Destroying ${a.name}` }, `Its ${a.started} running VM${a.started === 1 ? "" : "s"} will be stopped and removed, and
+    <b>${esc(appHost(a.name))}</b> stops answering. This can't be undone.`, "");
+}
+// `cli`: the equivalent command, shown under the field (none for apps).
+function askDestroy(target, html, cli) {
+  confirming = target;
+  $("#confirm-title").textContent = `Destroy ${target.name}?`;
+  $("#confirm-text").innerHTML = html;
+  $("#confirm-cli-row").hidden = $("#confirm-cli-hint").hidden = !cli;
+  $("#confirm-cli").innerHTML = shHighlight(cli);
+  $("#confirm-name").textContent = target.name;
+  $("#confirm-in").value = "";
+  $("#confirm-go").disabled = true;
+  $("#confirm").hidden = false;
+  $("#confirm-in").focus();
+}
+function closeConfirm() { $("#confirm").hidden = true; confirming = null; }
+$("#confirm-in").oninput = () => { $("#confirm-go").disabled = $("#confirm-in").value !== confirming?.name; };
+$("#confirm-cancel").onclick = closeConfirm;
+$("#confirm").onclick = (e) => { if (e.target.id === "confirm") closeConfirm(); };
+$("#confirm-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const t = confirming;
+  if (!t || $("#confirm-in").value !== t.name) return;
+  closeConfirm();
+  try { await api("DELETE", t.path); toast(t.done); }
+  catch (err) { toast(err.message, true); }
+  refresh();
+};
+
+$("#deploy-form").onsubmit = async (e) => {
+  e.preventDefault();
+  if (step !== "config") return;
+  const s = spec();
+  const p = problems(s);
+  for (const k of Object.keys(p)) f[k].classList.add("invalid");
+  if (Object.keys(p).length) { $("#deploy-err").textContent = Object.values(p)[0]; return; }
+  const go = $("#deploy-go");
+  go.disabled = true;
+  try {
+    await api("PUT", `/v1/apps/${s.name}`, body(s));
+    closeDeploy();
+    toast(`Deploying ${s.name}…`);
+    refresh();
+  } catch (err) {
+    $("#deploy-err").textContent = err.message;
+  } finally {
+    go.disabled = false;
+  }
+};
+
+// The app links' address first, then the first refresh.
+fetch("/config.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((c) => {
+  if (c.apps_url) appsUrl = c.apps_url;
+  if (c.flake_url) flakeUrl = c.flake_url;
+  if (c.auth === "token") auth = "token";
+  $("#sign-out").hidden = auth !== "token";
+  const gh = githubUrl(flakeUrl);
+  for (const a of [$("#src-link"), $("#si-src")]) { a.hidden = !gh; if (gh) a.href = gh; }
+  for (const n of document.querySelectorAll("[data-cli-hint]")) n.innerHTML = `No flyyy here? <span class="mono">nix profile install '${esc(flakeUrl)}#flyyy'</span>`;
+  configured();
+  $("#f-name-hint").textContent = `becomes ${appHost("<name>")}`;
+  refresh();
+});
+</script>
+</body>
+</html>

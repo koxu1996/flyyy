@@ -1,0 +1,72 @@
+[package]
+name = "proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+# Async runtime; `process` for the agent's ctr/systemctl/mknod calls, `sync` for its wake-up, `signal` for the edge's SIGHUP reload, `rt-multi-thread` for the edge.
+tokio = { version = "1.54.1", default-features = false, features = ["rt", "rt-multi-thread", "net", "time", "macros", "io-util", "process", "sync", "signal"] }
+
+# HTTP/1 and HTTP/2 server and client, with CONNECT upgrades for the backhaul (HTTP/2 between edges and backhauls).
+hyper = { version = "1.12.0", default-features = false, features = ["http1", "http2", "server", "client"] }
+
+# TokioIo and TokioExecutor, and the backhaul's server that takes HTTP/1 or HTTP/2 on one listener.
+hyper-util = { version = "0.1.21", default-features = false, features = ["tokio", "server-auto"] }
+
+# Boxed bodies, so proxied (streaming) and error responses share one type.
+http-body-util = { version = "0.1.5", default-features = false, features = [] }
+
+# /state JSON.
+serde_json = { version = "1.0.154", default-features = false, features = ["std"] }
+
+# Corrosion SDK: typed subscription streams, with the API's bearer token (with_auth_token: the crates.io
+# release can't send one). The commit nix/packages.nix builds Corrosion from.
+corro-client = { git = "https://github.com/superfly/corrosion", rev = "190b842ccdf746b8a87ea1beacdf25cb2a21d9ac", default-features = false, features = [] }
+
+# Its Statement/ChangeType types, from the same commit.
+corro-api-types = { git = "https://github.com/superfly/corrosion", rev = "190b842ccdf746b8a87ea1beacdf25cb2a21d9ac", default-features = false, features = [] }
+
+# Deserialising subscription rows.
+serde = { version = "1.0.229", default-features = false, features = ["std", "derive"] }
+
+# StreamExt for the subscription stream (already a corro-client dependency).
+futures = { version = "0.3.34", default-features = false, features = ["std"] }
+
+# Subscription ids, to re-attach on resync instead of creating a new subscription.
+uuid = { version = "1.29.0", default-features = false, features = ["std"] }
+
+# Command lines: the proxy's roles and the flyyy CLI, with env fallbacks for directories and test knobs.
+clap = { version = "4.6.7", default-features = false, features = ["std", "derive", "help", "usage", "error-context", "env"] }
+
+# Resync backoff.
+backon = { version = "1.6.0", default-features = false, features = ["tokio-sleep"] }
+
+# The edge's TLS (an already-issued certificate): ring as the crypto provider, TLS 1.2 and 1.3; PEM parsing via its pki-types.
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
+
+# TLS on tokio streams for the edge's HTTPS listener.
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12"] }
+
+# SHA-256 of users' API tokens (the control plane stores only that); already in the tree via rustls and rcgen.
+ring = { version = "0.17.14", default-features = false, features = [] }
+
+# The control plane's CA: issuing certificates from nodes' CSRs, and nodes making their keys and CSRs (ring, PEM, CSR parsing).
+rcgen = { version = "0.14.10", default-features = false, features = ["crypto", "ring", "pem", "x509-parser"] }
+
+# Certificate validity for rcgen (it takes time's OffsetDateTime and doesn't re-export it).
+time = { version = "0.3.55", default-features = false, features = ["std"] }
+
+# Reading a certificate's SANs (a peer's role) and validity.
+x509-parser = { version = "0.18.1", default-features = false, features = [] }
+
+# Logging: levels and structured fields instead of println!/eprintln!.
+tracing = { version = "0.1.44", default-features = false, features = ["std"] }
+
+# Its output: plain lines (level, message, fields) on stderr, for journald.
+tracing-subscriber = { version = "0.3.23", default-features = false, features = ["std", "fmt"] }
+
+[dev-dependencies]
+# Tests only: SQLite (built in) to check every query against schema.sql. The version corro-api-types already
+# uses: only one libsqlite3-sys may link SQLite.
+rusqlite = { version = "0.38.0", default-features = false, features = ["bundled"] }
